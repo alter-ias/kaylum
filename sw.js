@@ -7,17 +7,17 @@ const ALL_CACHES = [SONGS_CACHE_NAME, STATIC_ASSETS_CACHE_NAME];
 
 // Lista de archivos esenciales de la aplicación para que funcione offline.
 // Asegúrate de que todas estas rutas sean correctas desde la raíz de tu sitio.
+// CÓDIGO NUEVO Y CORRECTO en sw.js
 const PRECACHE_ASSETS = [
-    '/', // La página principal (index.html)
-    'index.html', // Añadir explícitamente por si '/' no funciona en algunos servidores
-    'manifest.json',
-    'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap',
-    'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css',
-    'https://cdn.jsdelivr.net/npm/fuse.js@7.0.0',
-    'assets/img/labplay/logokaylum.png',
-    'assets/img/logo03.png',
-    'assets/img/labplay/default-cover.jpg'
-    // No incluyas aquí las canciones, se cachean bajo demanda.
+    '/kaylum/', // La página principal de tu subdirectorio
+    '/kaylum/index.html', // Ruta completa al index
+    '/kaylum/manifest.json',
+    'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap', // <-- Esta no cambia
+    'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css', // <-- Esta no cambia
+    'https://cdn.jsdelivr.net/npm/fuse.js@7.0.0', // <-- Esta no cambia
+    '/kaylum/assets/img/labplay/logokaylum.png',
+    '/kaylum/assets/img/logo03.png',
+    '/kaylum/assets/img/labplay/default-cover.jpg'
 ];
 
 // Evento 'install': se dispara cuando el SW se instala por primera vez.
