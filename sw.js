@@ -1,8 +1,8 @@
 // sw.js
-// Versión: 1.6 - Caché de Skins Robusto
+// Versión: 1.7 - Caché de Skins Robusto con Rutas Relativas
 
 const SONGS_CACHE_NAME = 'kaylum-songs-cache-v1';
-const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v1.6'; // Incrementamos versión para forzar actualización
+const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v1.7'; // Incrementamos versión
 const ALL_CACHES = [SONGS_CACHE_NAME, STATIC_ASSETS_CACHE_NAME];
 const REPO_NAME = 'kaylum';
 
@@ -21,11 +21,10 @@ const PRECACHE_ASSETS = [
 
 const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRxbKnkTFmkECMfd_cRKchEv2XGOHII6YlLj0M0ragfExCtRWB2S0qTIZYrrFCTk3sxxctY2dnVgUif/pub?output=csv';
 
-// ***** CORRECCIÓN AQUÍ: Método de cacheo robusto *****
 async function cacheSkins() {
     try {
-        const skinsPath = `/${REPO_NAME}/assets/img/labplay/skins/`;
-        const response = await fetch(`${self.location.origin}${skinsPath}skins.json?_=${new Date().getTime()}`);
+        const skinsPath = `assets/img/labplay/skins/`; // Ruta relativa al scope del SW
+        const response = await fetch(`${skinsPath}skins.json?_=${new Date().getTime()}`);
         if (!response.ok) throw new Error(`No se pudo encontrar skins.json. Status: ${response.status}`);
         
         const skinFiles = await response.json();
@@ -34,7 +33,7 @@ async function cacheSkins() {
 
         let successfulSkins = 0;
         const cachePromises = skinFiles.map(async (file) => {
-            const skinUrl = `${self.location.origin}${skinsPath}${file}`;
+            const skinUrl = `${skinsPath}${file}`; // Construcción de ruta relativa
             try {
                 await cache.add(skinUrl);
                 successfulSkins++;
@@ -51,7 +50,6 @@ async function cacheSkins() {
     }
 }
 
-
 self.addEventListener('install', event => {
     console.log('SW: Instalando...');
     event.waitUntil(
@@ -65,21 +63,20 @@ self.addEventListener('install', event => {
     );
 });
 
-// El resto del archivo sw.js permanece igual que la versión anterior.
 self.addEventListener('activate', event => {
-  console.log('SW: Activando...');
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (!ALL_CACHES.includes(cacheName)) {
-            console.log('SW: Borrando caché antigua:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
-  );
+    console.log('SW: Activando...');
+    event.waitUntil(
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cacheName => {
+                    if (!ALL_CACHES.includes(cacheName)) {
+                        console.log('SW: Borrando caché antigua:', cacheName);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        }).then(() => self.clients.claim())
+    );
 });
 
 self.addEventListener('fetch', event => {
