@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KAYLUM - Reproductor</title>
-    <!-- Rutas corregidas, empiezan con / -->
-    <link rel="manifest" href="/manifest.json">
+    <!-- Rutas relativas (sin / al inicio) -->
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0F121B"/>
-    <link rel="icon" type="image/png" href="/assets/img/labplay/logokaylum.png">
+    <link rel="icon" type="image/png" href="assets/img/labplay/logokaylum.png">
     
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
@@ -20,14 +20,14 @@
         <video autoplay muted loop playsinline id="background-video"></video>
         <main class="container">
             <div class="music-app">
-                <!-- ... el resto del HTML del reproductor ... -->
+                 <!-- Contenido del reproductor -->
                 <div class="category-tabs" id="category-tabs"></div>
                 <div class="search-container">
                     <input type="search" id="search-input" placeholder="Buscar por artista o canción...">
                 </div>
                 <div class="player-wrapper" id="player-wrapper">
                     <div class="album-art-container">
-                        <img src="/assets/img/labplay/default-cover.jpg" alt="Carátula del Álbum" id="album-art">
+                        <img src="assets/img/labplay/default-cover.jpg" alt="Carátula del Álbum" id="album-art">
                     </div>
                     <div class="track-info">
                         <h2 id="song-title">Selecciona una canción</h2>
@@ -65,8 +65,7 @@
         </main>
     </div>
     
-    <!-- Rutas de script corregidas -->
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
-    <script src="/app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
