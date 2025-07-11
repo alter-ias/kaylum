@@ -1,11 +1,11 @@
 {
-  "name": "KAYLUM - Canto de la Tierra",
+  "name": "KAYLUM",
   "short_name": "KAYLUM",
   "start_url": "player.html",
   "display": "standalone",
   "background_color": "#0F121B",
   "theme_color": "#0F121B",
-  "description": "Una alternativa para escuchar y compartir música sin suscripciones.",
+  "description": "KAYLUM: Canto de la Tierra. Una alternativa para escuchar y compartir música.",
   "icons": [
     {
       "src": "assets/img/labplay/logokaylum.png",
