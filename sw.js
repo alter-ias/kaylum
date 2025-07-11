@@ -1,21 +1,18 @@
 // sw.js
-// Versión: 1.1 - Corregido para subdirectorio de GitHub Pages
+// Versión: 1.2 - Instalación robusta
 
 const SONGS_CACHE_NAME = 'kaylum-songs-cache-v1';
 const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v1';
 const ALL_CACHES = [SONGS_CACHE_NAME, STATIC_ASSETS_CACHE_NAME];
-const REPO_NAME = 'kaylum'; // <-- Nombre de tu repositorio en GitHub
+const REPO_NAME = 'kaylum';
 
-// Lista de archivos esenciales de la aplicación para que funcione offline.
 const PRECACHE_ASSETS = [
     `/${REPO_NAME}/`,
     `/${REPO_NAME}/index.html`,
     `/${REPO_NAME}/manifest.json`,
-    // URLs externas no se modifican
     'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap',
     'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css',
     'https://cdn.jsdelivr.net/npm/fuse.js@7.0.0',
-    // Rutas locales con el nombre del repositorio
     `/${REPO_NAME}/assets/img/labplay/logokaylum.png`,
     `/${REPO_NAME}/assets/img/logo03.png`,
     `/${REPO_NAME}/assets/img/labplay/default-cover.jpg`
@@ -26,11 +23,13 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(STATIC_ASSETS_CACHE_NAME)
       .then(cache => {
-        console.log('SW: Pre-cacheando assets estáticos de la aplicación.');
-        return cache.addAll(PRECACHE_ASSETS);
-      })
-      .catch(error => {
-        console.error('SW: Fallo en el pre-caching durante la instalación.', error);
+        console.log('SW: Pre-cacheando assets estáticos.');
+        const cachePromises = PRECACHE_ASSETS.map(assetUrl => {
+            return cache.add(assetUrl).catch(err => {
+                console.warn(`SW: Fallo al cachear el asset: ${assetUrl}`, err);
+            });
+        });
+        return Promise.all(cachePromises);
       })
       .then(() => self.skipWaiting())
   );
