@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <!-- Tu head sigue igual -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KAYLUM - Canto de la Tierra</title>
@@ -18,7 +17,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
     <style>
-        /* Tu CSS sigue igual */
         :root {
             --background-color: #0F121B;
             --text-color: #FFFFFF;
@@ -378,7 +376,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleSongEnd() { if (isRepeatActive) { audioPlayer.currentTime = 0; audioPlayer.play(); } else { playNextSong(); } }
     function togglePlayPause() { if (audioPlayer.paused) { audioPlayer.play().catch(e => console.error("Error al reproducir:", e)); } else { audioPlayer.pause(); } }
     
-    // ***** FUNCIONES RESTAURADAS *****
     function toggleShuffle() {
         isShuffleActive = !isShuffleActive;
         shuffleBtn.classList.toggle('active', isShuffleActive);
@@ -543,8 +540,9 @@ document.addEventListener('DOMContentLoaded', () => {
                  const indexToPlay = currentPlaylist.findIndex(s => s.publicId === songIdFromUrl);
                  if (indexToPlay !== -1) loadSong(indexToPlay, true);
             } else {
-                const defaultCategory = !navigator.onLine && downloadedSongs.size > 0 ? 'Guardados' : Object.keys(playlistsData).find(k => k !== 'Favoritos' && k !== 'Guardados') || 'Guardados';
-                loadCategory(defaultCategory || Object.keys(playlistsData)[0]);
+                const firstOnlineCategory = Object.keys(playlistsData).find(k => k !== 'Favoritos' && k !== 'Guardados');
+                const defaultCategory = !navigator.onLine && downloadedSongs.size > 0 ? 'Guardados' : firstOnlineCategory || 'Guardados';
+                loadCategory(defaultCategory);
             }
         } else {
             songTitleEl.textContent = "Sin Conexión";
@@ -579,13 +577,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         categoryTabsContainer.addEventListener('click', (e) => { const btn = e.target.closest('button'); if (btn) loadCategory(btn.dataset.category) });
-        prevBtn.addEventListener('click', playPrevSong);
-        nextBtn.addEventListener('click', playNextSong);
-        shuffleBtn.addEventListener('click', toggleShuffle);
-        repeatBtn.addEventListener('click', toggleRepeat);
-        shareBtn.addEventListener('click', shareSong);
-        addToFavoritesBtn.addEventListener('click', toggleFavorite);
-        searchInput.addEventListener('input', () => { currentPage = 1; updatePaginatedView(); });
+        
+        // ***** LISTENER RESTAURADO AQUÍ *****
         paginationControlsContainer.addEventListener('click', (e) => {
             const button = e.target.closest('button');
             if (!button || button.disabled) return;
@@ -593,15 +586,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (searchInput.value.trim()){
                  const searchResults = fuse.search(searchInput.value.trim());
                  const searchResultIds = new Set(searchResults.map(result => result.item.publicId));
-                 playlistToDisplay = currentPlaylist.filter(song => searchResultIds.has(song.publicId));
+                 playlistToPaginate = currentPlaylist.filter(song => searchResultIds.has(song.publicId));
             }
-            const totalPages = Math.ceil(playlistToDisplay.length / songsPerPage);
+            const totalPages = Math.ceil(playlistToPaginate.length / songsPerPage);
             const pageAction = button.dataset.page;
             if (pageAction === 'prev' && currentPage > 1) currentPage--;
             else if (pageAction === 'next' && currentPage < totalPages) currentPage++;
             else if (!isNaN(pageAction)) currentPage = parseInt(pageAction);
             updatePaginatedView();
         });
+
+        prevBtn.addEventListener('click', playPrevSong);
+        nextBtn.addEventListener('click', playNextSong);
+        shuffleBtn.addEventListener('click', toggleShuffle);
+        repeatBtn.addEventListener('click', toggleRepeat);
+        shareBtn.addEventListener('click', shareSong);
+        addToFavoritesBtn.addEventListener('click', toggleFavorite);
+        searchInput.addEventListener('input', () => { currentPage = 1; updatePaginatedView(); });
         aboutToggleBtn.addEventListener('click', () => { aboutContent.classList.toggle('is-open'); });
         songInfoToggleBtn.addEventListener('click', () => { songInformationEl.classList.toggle('is-open'); });
         adventureModeBtn.addEventListener('click', () => {
