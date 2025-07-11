@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <!-- Tu <head> sigue igual que antes -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KAYLUM - Canto de la Tierra</title>
@@ -18,7 +17,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
     <style>
-        /* Tu CSS sigue igual que antes */
         :root {
             --background-color: #0F121B;
             --text-color: #FFFFFF;
@@ -132,7 +130,6 @@
     </style>
 </head>
 <body>
-    <!-- Tu <body> sigue igual que antes -->
     <div class="page-wrapper">
         <video autoplay muted loop playsinline id="background-video"></video>
         <header class="main-header container">
@@ -221,7 +218,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 1. VARIABLES Y CONSTANTES (Sin cambios)
+    // 1. VARIABLES Y CONSTANTES
     const addToHomeBtn = document.getElementById('add-to-home-btn');
     const songTitleEl = document.getElementById('song-title');
     const songArtistEl = document.getElementById('song-artist');
@@ -266,9 +263,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let userFavorites = [];
     let downloadedSongs = new Set(); 
 
-    // 2. DEFINICIÓN DE TODAS LAS FUNCIONES (con cambios)
+    // 2. DEFINICIÓN DE TODAS LAS FUNCIONES
 
-    // ***** NUEVAS FUNCIONES AUXILIARES PARA METADATOS *****
     function getDownloadedSongMetadata() {
         const metadata = localStorage.getItem('kaylum_downloaded_metadata');
         return metadata ? JSON.parse(metadata) : {};
@@ -280,30 +276,21 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('kaylum_downloaded_metadata', JSON.stringify(allMetadata));
     }
 
-    // ***** CAMBIO AQUÍ *****
-    // handleDownloadClick ahora también guarda los metadatos.
     function handleDownloadClick(button) {
         const songId = button.dataset.songId;
         const songUrl = button.dataset.songUrl;
-
-        // Encontrar el objeto completo de la canción para guardar sus metadatos
         const songToDownload = allSongs.find(song => song.publicId === songId);
         if (!songToDownload) {
             alert('Error: No se encontraron los datos de la canción.');
             return;
         }
-
         if (downloadedSongs.has(songId)) return;
         if (!navigator.serviceWorker.controller) {
             alert('El controlador de la aplicación no está listo. Por favor, recarga la página.');
             return;
         }
-
         updateDownloadButtonStatus(songId, 'downloading');
-        
-        // Guardar metadatos ANTES de enviar el mensaje al SW
         saveDownloadedSongMetadata(songToDownload);
-
         navigator.serviceWorker.controller.postMessage({
             action: 'DOWNLOAD_SONG',
             songId: songId,
@@ -312,7 +299,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateDownloadButtonStatus(songId, status) {
-        // (Sin cambios)
         document.querySelectorAll(`.download-btn[data-song-id="${songId}"]`).forEach(button => {
             if (!button) return;
             button.disabled = false;
@@ -339,7 +325,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateAllDownloadButtons() {
-        // (Sin cambios)
         document.querySelectorAll('.download-btn').forEach(button => {
             const songId = button.dataset.songId;
             if (downloadedSongs.has(songId)) {
@@ -351,9 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupServiceWorker() {
-        // (Sin cambios, ya estaba corregido)
         if (!('serviceWorker' in navigator)) return;
-
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/kaylum/sw.js', { scope: '/kaylum/' }).then(registration => {
                 console.log('Service Worker registrado con éxito:', registration.scope);
@@ -366,7 +349,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Fallo en el registro del Service Worker:', err);
             });
         });
-        
         navigator.serviceWorker.addEventListener('message', event => {
             if (!event.data) return;
             const { action, songId, error, songIds } = event.data;
@@ -398,7 +380,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupPWAInstall() {
-        // (Sin cambios)
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredInstallPrompt = e;
@@ -417,25 +398,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // ***** CAMBIO CRÍTICO AQUÍ *****
-    // El bloque `catch` ahora es inteligente y carga los datos desde localStorage.
+    // ***** FUNCIÓN RESTAURADA *****
+    // Esta es la función que faltaba y causaba el error.
+    async function loadSkins() { 
+        try { 
+            const response = await fetch(`${skinsPath}skins.json?_=${new Date().getTime()}`); 
+            if (!response.ok) throw new Error('No se encontró skins.json'); 
+            const skinFiles = await response.json(); 
+            skins = skinFiles.map(file => `${skinsPath}${file}`); 
+            if (skins.length > 0) { 
+                if (isNaN(currentSkinIndex) || currentSkinIndex < 0 || currentSkinIndex >= skins.length) { currentSkinIndex = 0; } 
+                const initialSkin = skins[currentSkinIndex]; 
+                const extension = initialSkin.split('.').pop(); 
+                if (['webm', 'mp4'].includes(extension)) { 
+                    backgroundVideo.innerHTML = `<source src="${initialSkin}" type="video/${extension}">`; 
+                } else if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) { 
+                    backgroundVideo.style.backgroundImage = `url('${initialSkin}')`; 
+                    backgroundVideo.innerHTML = ''; 
+                } 
+                backgroundVideo.load(); 
+                backgroundVideo.play().catch(e => {}); 
+            } 
+        } catch (error) { 
+            console.warn("No se pudo cargar la lista de skins:", error.message);
+            backgroundVideo.innerHTML = `<source src="assets/img/labplay/skins/skin03.webm" type="video/webm">`; 
+            backgroundVideo.load(); 
+        } 
+    }
+
     async function init() {
         loadUserSettings();
-        await loadSkins();
+        await loadSkins(); // La llamada ahora tiene una función que ejecutar
         try {
-            // Intenta obtener la lista de canciones de la red (o del caché del SW)
             const response = await fetch(`${googleSheetCsvUrl}&_=${new Date().getTime()}`);
             if (!response.ok) throw new Error("La respuesta de red no fue 'ok'");
-
             const csvText = await response.text();
             if(!csvText) throw new Error("El archivo CSV está vacío.");
-            
             const rows = csvText.trim().replace(/\r/g, '').split('\n').slice(1);
-            
-            // Limpiamos los datos para evitar duplicados en recargas
             allSongs = []; 
             playlistsData = {};
-
             rows.forEach(row => {
                 const [title, artist, category, publicId, cover, information] = parseCsvRow(row);
                 if (!category || !publicId || !title) return;
@@ -445,31 +446,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 playlistsData[category].push(songObject);
                 allSongs.push(songObject);
             });
-            
             if (allSongs.length === 0) throw new Error("No se pudieron parsear canciones del CSV.");
-
             fuse = new Fuse(allSongs, { keys: ['title', 'artist'], threshold: 0.4 });
-            
         } catch (error) {
-            console.warn("MODO OFFLINE: No se pudo obtener la lista de canciones de la red. Error:", error);
+            console.warn("MODO OFFLINE: No se pudo obtener la lista de canciones. Error:", error);
             console.log("Cargando canciones guardadas desde el almacenamiento local...");
-            
             const savedMetadata = getDownloadedSongMetadata();
             allSongs = Object.values(savedMetadata);
-
             if (allSongs.length > 0) {
-                // Creamos categorías a partir de las canciones guardadas
                 allSongs.forEach(song => {
-                    if (!playlistsData[song.category]) {
-                        playlistsData[song.category] = [];
-                    }
+                    if (!playlistsData[song.category]) playlistsData[song.category] = [];
                     playlistsData[song.category].push(song);
                 });
                 fuse = new Fuse(allSongs, { keys: ['title', 'artist'], threshold: 0.4 });
             }
         }
 
-        // Este código se ejecuta tanto en modo online como offline
         if (userFavorites.length > 0) playlistsData['Favoritos'] = [];
         if (downloadedSongs.size > 0) playlistsData['Guardados'] = [];
 
@@ -479,24 +471,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const songIdFromUrl = urlParams.get('song');
             if (songIdFromUrl && allSongs.some(s => s.publicId === songIdFromUrl)) {
-                // ... lógica para cargar canción desde URL ...
+                 const songToPlay = allSongs.find(s => s.publicId === songIdFromUrl);
+                 loadCategory(songToPlay.category);
+                 const indexToPlay = currentPlaylist.findIndex(s => s.publicId === songIdFromUrl);
+                 if (indexToPlay !== -1) loadSong(indexToPlay, true);
             } else {
-                // Si estamos offline y tenemos canciones, ir a 'Guardados' por defecto
                 const defaultCategory = !navigator.onLine && downloadedSongs.size > 0 ? 'Guardados' : Object.keys(playlistsData).find(k => k !== 'Favoritos' && k !== 'Guardados') || 'Guardados';
                 loadCategory(defaultCategory);
             }
         } else {
-            // Este es el caso final donde no hay conexión y nunca se ha guardado nada.
             songTitleEl.textContent = "Sin Conexión";
             songArtistEl.textContent = "Conéctate para descubrir música.";
             playlistViewContainer.innerHTML = `<p style="text-align:center; padding: 20px 0; color:var(--secondary-text-color);">No hay canciones guardadas para mostrar sin conexión.</p>`;
         }
-        
         setupEventListeners();
     }
 
     function setupEventListeners() {
-        // (Sin cambios)
         audioPlayer.addEventListener('ended', handleSongEnd);
         playlistViewContainer.addEventListener('click', (e) => {
             const targetLi = e.target.closest('li');
@@ -522,7 +513,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         categoryTabsContainer.addEventListener('click', (e) => { const btn = e.target.closest('button'); if (btn) loadCategory(btn.dataset.category) });
-        // ... resto de event listeners sin cambios ...
         prevBtn.addEventListener('click', playPrevSong);
         nextBtn.addEventListener('click', playNextSong);
         shuffleBtn.addEventListener('click', toggleShuffle);
@@ -593,22 +583,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function renderCategoryTabs() {
-        // (Sin cambios)
         const categories = Object.keys(playlistsData);
         let buttonsHTML = '';
-        
         if (downloadedSongs.size > 0) {
             buttonsHTML += `<button data-category="Guardados"><i class="bi bi-cloud-check"></i> Guardados</button>`;
         }
         if (userFavorites.length > 0) {
             buttonsHTML += `<button data-category="Favoritos"><i class="bi bi-star"></i> Favoritos</button>`;
         }
-        
         const otherCategories = categories.filter(c => c !== 'Favoritos' && c !== 'Guardados' && !c.startsWith('Artista:'));
         otherCategories.forEach(c => {
              buttonsHTML += `<button data-category="${c}">${c}</button>`;
         });
-
         categoryTabsContainer.innerHTML = buttonsHTML;
         document.querySelectorAll('.category-tabs button').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.category === currentCategory);
@@ -616,7 +602,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function loadCategory(category) {
-        // (Sin cambios)
         currentCategory = category;
         if (category === 'Favoritos') {
             currentPlaylist = allSongs.filter(song => userFavorites.includes(song.publicId));
@@ -626,21 +611,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const categorySongs = playlistsData[category] || [];
             currentPlaylist = isShuffleActive ? shuffleArray(categorySongs) : [...categorySongs];
         }
-        
         currentSongIndex = -1;
         currentPage = 1;
         renderCategoryTabs();
         updatePaginatedView();
-        
         if (currentPlaylist.length > 0) {
             loadSong(0);
         } else {
-            songTitleEl.textContent = "Modo sin conexión";
-            songArtistEl.textContent = "Aún no tienes canciones guardadas.";
-            albumArtEl.src = defaultCover;
-            if (category === "Guardados") {
-                 playlistViewContainer.innerHTML = `<p style="text-align:center; padding: 20px 0; color:var(--secondary-text-color);">Descarga canciones para escucharlas aquí sin conexión.</p>`;
+            songTitleEl.textContent = "Sin canciones";
+            songArtistEl.textContent = "Categoría vacía";
+            if(category === "Guardados") {
+                 songTitleEl.textContent = "Modo sin conexión";
+                 songArtistEl.textContent = "Aún no tienes canciones guardadas.";
             }
+            albumArtEl.src = defaultCover;
             audioPlayer.src = "";
             songInfoToggleBtn.style.display = 'none';
             updatePlaylistHighlight();
@@ -648,16 +632,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // El resto de funciones auxiliares no necesitan cambios
-    // ... (renderPlaylistView, loadUserSettings, toggleFavorite, etc.) ...
-    // Pego las más importantes para que el código sea completo
     function renderPlaylistView(playlistToRender) {
         if (!playlistToRender || playlistToRender.length === 0) {
-            if (currentCategory === 'Guardados') {
-                playlistViewContainer.innerHTML = `<p style="text-align:center; padding: 20px 0; color:var(--secondary-text-color);">Descarga canciones para escucharlas aquí sin conexión.</p>`;
-            } else {
-                playlistViewContainer.innerHTML = `<p style="text-align:center; padding: 20px 0; color:var(--secondary-text-color);">${searchInput.value.trim() ? 'No se encontraron resultados.' : 'No hay canciones en esta categoría.'}</p>`;
-            }
+            let message = searchInput.value.trim() ? 'No se encontraron resultados.' : 'No hay canciones en esta categoría.';
+            if (currentCategory === 'Guardados') message = 'Descarga canciones para escucharlas aquí sin conexión.';
+            playlistViewContainer.innerHTML = `<p style="text-align:center; padding: 20px 0; color:var(--secondary-text-color);">${message}</p>`;
             return;
         }
         const listHTML = `<ol>${playlistToRender.map((song) => {
@@ -677,15 +656,60 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePlaylistHighlight();
         updateAllDownloadButtons();
     }
-    function loadUserSettings() { const savedColor = localStorage.getItem('kaylum_textColor'); if (savedColor) { document.documentElement.style.setProperty('--text-color', savedColor); colorPicker.value = savedColor; } const savedSkinIndex = localStorage.getItem('kaylum_skinIndex'); if (savedSkinIndex !== null) { currentSkinIndex = parseInt(savedSkinIndex, 10); } const savedFavorites = localStorage.getItem('kaylum_favorites'); if (savedFavorites) { userFavorites = JSON.parse(savedFavorites); } }
-    function loadSong(playlistIndex, fromUrl = false) { if (playlistIndex < 0 || playlistIndex >= currentPlaylist.length) return; currentSongIndex = playlistIndex; const song = currentPlaylist[playlistIndex]; songTitleEl.textContent = song.title; songArtistEl.textContent = song.artist; albumArtEl.src = (song.cover && song.cover.trim() !== '') ? song.cover : defaultCover; songInformationEl.classList.remove('is-open'); if (song.information && song.information.trim() !== '') { songInformationEl.textContent = song.information; songInfoToggleBtn.style.display = 'block'; } else { songInfoToggleBtn.style.display = 'none'; } updatePlaylistHighlight(); updateFavoriteButton(); audioPlayer.src = song.publicUrl; audioPlayer.play().catch(e => {}); if ('mediaSession' in navigator) { navigator.mediaSession.metadata = new MediaMetadata({ title: song.title, artist: song.artist, album: `KAYLUM: ${song.category}`, artwork: [{ src: albumArtEl.src, sizes: '250x250', type: 'image/jpeg' },] }); } }
-    function updatePlaylistHighlight() { if (currentSongIndex < 0) { document.querySelectorAll('.playlist-view li').forEach(li => li.classList.remove('playing')); return; }; const currentSong = currentPlaylist[currentSongIndex]; if (!currentSong) return; const globalIndex = allSongs.findIndex(s => s.publicId === currentSong.publicId); document.querySelectorAll('.playlist-view li').forEach(li => { li.classList.toggle('playing', parseInt(li.dataset.globalIndex) === globalIndex); }); }
+    
+    function loadUserSettings() { 
+        const savedColor = localStorage.getItem('kaylum_textColor'); 
+        if (savedColor) { 
+            document.documentElement.style.setProperty('--text-color', savedColor); 
+            colorPicker.value = savedColor; 
+        } 
+        const savedSkinIndex = localStorage.getItem('kaylum_skinIndex'); 
+        if (savedSkinIndex !== null) { 
+            currentSkinIndex = parseInt(savedSkinIndex, 10); 
+        } 
+        const savedFavorites = localStorage.getItem('kaylum_favorites'); 
+        if (savedFavorites) { 
+            userFavorites = JSON.parse(savedFavorites); 
+        } 
+    }
+    
+    function loadSong(playlistIndex, fromUrl = false) { 
+        if (playlistIndex < 0 || playlistIndex >= currentPlaylist.length) return; 
+        currentSongIndex = playlistIndex; 
+        const song = currentPlaylist[playlistIndex]; 
+        songTitleEl.textContent = song.title; 
+        songArtistEl.textContent = song.artist; 
+        albumArtEl.src = (song.cover && song.cover.trim() !== '') ? song.cover : defaultCover; 
+        songInformationEl.classList.remove('is-open'); 
+        if (song.information && song.information.trim() !== '') { 
+            songInformationEl.textContent = song.information; 
+            songInfoToggleBtn.style.display = 'block'; 
+        } else { 
+            songInfoToggleBtn.style.display = 'none'; 
+        } 
+        updatePlaylistHighlight(); 
+        updateFavoriteButton(); 
+        audioPlayer.src = song.publicUrl; 
+        audioPlayer.play().catch(e => {}); 
+        if ('mediaSession' in navigator) { 
+            navigator.mediaSession.metadata = new MediaMetadata({ 
+                title: song.title, 
+                artist: song.artist, 
+                album: `KAYLUM: ${song.category}`, 
+                artwork: [{ src: albumArtEl.src, sizes: '250x250', type: 'image/jpeg' },] 
+            }); 
+        } 
+    }
+    
     const parseCsvRow = (row) => { const c = []; let d = ''; let e = !1; for (let f = 0; f < row.length; f++) { const g = row[f]; if ('"' === g) e && '"' === row[f + 1] ? (d += '"', f++) : e = !e; else if (',' === g && !e) c.push(d.trim()), d = ''; else d += g } c.push(d.trim()); return c.map(h => h.startsWith('"') && h.endsWith('"') ? h.slice(1, -1) : h) };
     function handleSongEnd() { if (isRepeatActive) { audioPlayer.currentTime = 0; audioPlayer.play(); } else { playNextSong(); } }
     function playNextSong() { if (currentPlaylist.length === 0) return; currentSongIndex = (currentSongIndex + 1) % currentPlaylist.length; loadSong(currentSongIndex); }
     function playPrevSong() { if (currentPlaylist.length === 0) return; currentSongIndex = (currentSongIndex - 1 + currentPlaylist.length) % currentPlaylist.length; loadSong(currentSongIndex); }
     function toggleRepeat() { isRepeatActive = !isRepeatActive; repeatBtn.classList.toggle('active', isRepeatActive); }
-    // ... y el resto de funciones que ya tenías ...
+    function updatePlaylistHighlight() { if (currentSongIndex < 0) { document.querySelectorAll('.playlist-view li').forEach(li => li.classList.remove('playing')); return; }; const currentSong = currentPlaylist[currentSongIndex]; if (!currentSong) return; const globalIndex = allSongs.findIndex(s => s.publicId === currentSong.publicId); document.querySelectorAll('.playlist-view li').forEach(li => { li.classList.toggle('playing', parseInt(li.dataset.globalIndex) === globalIndex); }); }
+    function updateFavoriteButton() { if (currentSongIndex < 0) { addToFavoritesBtn.innerHTML = '<i class="bi bi-heart"></i>'; addToFavoritesBtn.classList.remove('is-favorite'); return; } const songId = currentPlaylist[currentSongIndex].publicId; const isFavorite = userFavorites.includes(songId); addToFavoritesBtn.innerHTML = isFavorite ? '<i class="bi bi-heart-fill"></i>' : '<i class="bi bi-heart"></i>'; addToFavoritesBtn.classList.toggle('is-favorite', isFavorite); }
+    function updatePaginatedView() { let playlistToDisplay = currentPlaylist; if (searchInput.value.trim()) { const searchResults = fuse.search(searchInput.value.trim()); const searchResultIds = new Set(searchResults.map(result => result.item.publicId)); playlistToDisplay = currentPlaylist.filter(song => searchResultIds.has(song.publicId)); } const startIndex = (currentPage - 1) * songsPerPage; const paginatedSongs = playlistToDisplay.slice(startIndex, startIndex + songsPerPage); renderPlaylistView(paginatedSongs); renderPaginationControls(playlistToDisplay.length); }
+    function renderPaginationControls(totalItems) { const totalPages = Math.ceil(totalItems / songsPerPage); paginationControlsContainer.style.display = totalPages > 1 ? 'flex' : 'none'; if (totalPages <= 1) { paginationControlsContainer.innerHTML = ''; return; } let buttonsHTML = `<button data-page="prev" ${currentPage === 1 ? 'disabled' : ''}><</button>`; let startPage, endPage; if (totalPages <= 3) { startPage = 1; endPage = totalPages; } else { if (currentPage <= 2) { startPage = 1; endPage = 3; } else if (currentPage >= totalPages - 1) { startPage = totalPages - 2; endPage = totalPages; } else { startPage = currentPage - 1; endPage = currentPage + 1; } } for (let i = startPage; i <= endPage; i++) { buttonsHTML += `<button data-page="${i}" class="${i === currentPage ? 'active' : ''}">${i}</button>`; } buttonsHTML += `<button data-page="next" ${currentPage === totalPages ? 'disabled' : ''}>></button>`; paginationControlsContainer.innerHTML = buttonsHTML; }
 
     // 3. EJECUCIÓN INICIAL
     setupServiceWorker();
