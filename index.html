@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KAYLUM - Canto de la Tierra</title>
-    <!-- Rutas corregidas, empiezan con / -->
-    <link rel="manifest" href="/manifest.json">
+    <!-- Rutas relativas (sin / al inicio) -->
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0F121B"/>
-    <link rel="icon" type="image/png" href="/assets/img/labplay/logokaylum.png">
+    <link rel="icon" type="image/png" href="assets/img/labplay/logokaylum.png">
     
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
@@ -21,22 +21,20 @@
         <header class="main-header container">
             <div class="logo-container">
                 <div class="logo">
-                    <!-- Aquí la ruta es relativa porque es un enlace de navegación, no un recurso -->
-                    <a href="index.html"><img src="/assets/img/logo03.png" alt="Kaylum Logo"><span class="logo-text">KAYLUM</span></a>
+                    <a href="index.html"><img src="assets/img/logo03.png" alt="Kaylum Logo"><span class="logo-text">KAYLUM</span></a>
                     <p class="subtitle">Neologismo que fusiona la raíz maya K'ay (canto) y Lum (tierra), significando 'Canto de la Tierra'.</p>
                 </div>
             </div>
         </header>
         <main class="container">
             <div class="music-app">
-                <!-- ... el resto del HTML del reproductor ... -->
-                 <div class="category-tabs" id="category-tabs"></div>
+                <div class="category-tabs" id="category-tabs"></div>
                 <div class="search-container">
                     <input type="search" id="search-input" placeholder="Buscar por artista o canción...">
                 </div>
                 <div class="player-wrapper" id="player-wrapper">
                     <div class="album-art-container">
-                        <img src="/assets/img/labplay/default-cover.jpg" alt="Carátula del Álbum" id="album-art">
+                        <img src="assets/img/labplay/default-cover.jpg" alt="Carátula del Álbum" id="album-art">
                     </div>
                     <div class="track-info">
                         <h2 id="song-title">Selecciona una canción</h2>
@@ -76,13 +74,9 @@
             <div class="description-wrapper">
                 <button id="about-toggle-btn">Acerca de este proyecto</button>
                 <div id="about-content">
-                    <p>
-                        Daniel Ek, CEO de Spotify...
-                    </p>
-                    <img src="/assets/img/labplay/alterplayflux.png" alt="Diagrama de flujo del proyecto Kaylum" class="flux-diagram">
-                    <p>
-                        Este proyecto...
-                    </p>
+                    <p>Daniel Ek, CEO de Spotify...</p>
+                    <img src="assets/img/labplay/alterplayflux.png" alt="Diagrama de flujo del proyecto Kaylum" class="flux-diagram">
+                    <p>Este proyecto...</p>
                 </div>
             </div>
         </section>
@@ -94,8 +88,7 @@
         </footer>
     </div>
     
-    <!-- Rutas de script corregidas -->
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
-    <script src="/app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
