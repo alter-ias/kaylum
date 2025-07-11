@@ -1,8 +1,8 @@
 // sw.js
-// Versión: 1.7 - Caché de Skins Robusto con Rutas Relativas
+// Versión: 1.8 - Descarga de Skins a Petición del Usuario
 
 const SONGS_CACHE_NAME = 'kaylum-songs-cache-v1';
-const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v1.7'; // Incrementamos versión
+const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v1.8'; // Incrementamos versión
 const ALL_CACHES = [SONGS_CACHE_NAME, STATIC_ASSETS_CACHE_NAME];
 const REPO_NAME = 'kaylum';
 
@@ -21,45 +21,16 @@ const PRECACHE_ASSETS = [
 
 const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRxbKnkTFmkECMfd_cRKchEv2XGOHII6YlLj0M0ragfExCtRWB2S0qTIZYrrFCTk3sxxctY2dnVgUif/pub?output=csv';
 
-async function cacheSkins() {
-    try {
-        const skinsPath = `assets/img/labplay/skins/`; // Ruta relativa al scope del SW
-        const response = await fetch(`${skinsPath}skins.json?_=${new Date().getTime()}`);
-        if (!response.ok) throw new Error(`No se pudo encontrar skins.json. Status: ${response.status}`);
-        
-        const skinFiles = await response.json();
-        const cache = await caches.open(STATIC_ASSETS_CACHE_NAME);
-        console.log('SW: Cacheando skins individualmente...');
-
-        let successfulSkins = 0;
-        const cachePromises = skinFiles.map(async (file) => {
-            const skinUrl = `${skinsPath}${file}`; // Construcción de ruta relativa
-            try {
-                await cache.add(skinUrl);
-                successfulSkins++;
-            } catch (err) {
-                console.warn(`SW: Fallo al cachear la skin: ${skinUrl}`, err);
-            }
-        });
-
-        await Promise.all(cachePromises);
-        console.log(`SW: ${successfulSkins} de ${skinFiles.length} skins cacheadas con éxito.`);
-
-    } catch (error) {
-        console.warn('SW: No se pudieron cachear las skins.', error);
-    }
-}
-
+// El cacheo automático de skins se ha eliminado.
 self.addEventListener('install', event => {
     console.log('SW: Instalando...');
     event.waitUntil(
-        Promise.all([
-            caches.open(STATIC_ASSETS_CACHE_NAME).then(cache => {
+        caches.open(STATIC_ASSETS_CACHE_NAME)
+            .then(cache => {
                 console.log('SW: Pre-cacheando assets estáticos.');
                 return cache.addAll(PRECACHE_ASSETS);
-            }),
-            cacheSkins()
-        ]).then(() => self.skipWaiting())
+            })
+            .then(() => self.skipWaiting())
     );
 });
 
@@ -112,6 +83,24 @@ self.addEventListener('fetch', event => {
     );
 });
 
+
+// ***** CAMBIO AQUÍ: Añadida la acción DOWNLOAD_SKIN *****
+async function handleSkinDownload(url, clientId) {
+  try {
+    const cache = await caches.open(STATIC_ASSETS_CACHE_NAME);
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Respuesta de red no fue OK para la skin: ${url}`);
+    }
+    await cache.put(url, response.clone());
+    console.log(`SW: Skin cacheada con éxito: ${url}`);
+    await sendMessageToClient(clientId, { action: 'SKIN_DOWNLOADED', url: url });
+  } catch (error) {
+    console.error(`SW: Fallo al descargar o cachear la skin ${url}.`, error);
+    await sendMessageToClient(clientId, { action: 'SKIN_DOWNLOAD_ERROR', url: url, error: error.message });
+  }
+}
+
 self.addEventListener('message', event => {
   if (!event.data) return;
   const { action, songId, url } = event.data;
@@ -121,6 +110,8 @@ self.addEventListener('message', event => {
     event.waitUntil(handleDownload(songId, url, clientId));
   } else if (action === 'GET_DOWNLOADED_SONGS') {
     event.waitUntil(sendDownloadedSongsList(clientId));
+  } else if (action === 'DOWNLOAD_SKIN') { // Nueva acción
+    event.waitUntil(handleSkinDownload(url, clientId));
   }
 });
 
