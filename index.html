@@ -130,7 +130,6 @@
     </style>
 </head>
 <body>
-    <!-- El contenido del body no cambia -->
     <div class="page-wrapper">
         <video autoplay muted loop playsinline id="background-video"></video>
         <header class="main-header container">
@@ -219,14 +218,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ===================================================================
-    // ORDEN DE EJECUCIÓN CORREGIDO:
-    // 1. Definir todas las variables.
-    // 2. Definir todas las funciones.
-    // 3. Ejecutar la lógica (event listeners e init).
-    // ===================================================================
-
-    // 1. DEFINICIÓN DE VARIABLES Y ESTADO DE LA APP
+    // 1. VARIABLES Y CONSTANTES
     const addToHomeBtn = document.getElementById('add-to-home-btn');
     const songTitleEl = document.getElementById('song-title');
     const songArtistEl = document.getElementById('song-artist');
@@ -271,14 +263,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let userFavorites = [];
     let downloadedSongs = new Set(); 
 
-    // 2. DEFINICIÓN DE TODAS LAS FUNCIONES DE LA APP
+    // 2. DEFINICIÓN DE TODAS LAS FUNCIONES
     function handleDownloadClick(button) {
         const songId = button.dataset.songId;
         const songUrl = button.dataset.songUrl;
-
         if (downloadedSongs.has(songId)) return;
         if (!navigator.serviceWorker.controller) {
-            alert('El controlador de la aplicación no está listo. Por favor, recarga la página e inténtalo de nuevo.');
+            alert('El controlador de la aplicación no está listo. Por favor, recarga la página.');
             return;
         }
         updateDownloadButtonStatus(songId, 'downloading');
@@ -324,6 +315,61 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    function setupServiceWorker() {
+        if (!('serviceWorker' in navigator)) return;
+
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').then(registration => {
+                console.log('Service Worker registrado con éxito:', registration.scope);
+                navigator.serviceWorker.ready.then(readyRegistration => {
+                    if (readyRegistration.active) {
+                        readyRegistration.active.postMessage({ action: 'GET_DOWNLOADED_SONGS' });
+                    }
+                });
+            }).catch(err => {
+                console.error('Fallo en el registro del Service Worker:', err);
+            });
+        });
+
+        navigator.serviceWorker.addEventListener('message', event => {
+            if (!event.data) return;
+            const { action, songId, error, songIds } = event.data;
+            switch(action) {
+                case 'SONG_DOWNLOADED':
+                    downloadedSongs.add(songId);
+                    updateDownloadButtonStatus(songId, 'downloaded');
+                    break;
+                case 'DOWNLOAD_ERROR':
+                    updateDownloadButtonStatus(songId, 'error');
+                    alert(`No se pudo descargar la canción. Inténtalo de nuevo.`);
+                    break;
+                case 'DOWNLOADED_SONGS_LIST':
+                    downloadedSongs = new Set(songIds);
+                    updateAllDownloadButtons();
+                    break;
+            }
+        });
+    }
+
+    function setupPWAInstall() {
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            if (addToHomeBtn) {
+                addToHomeBtn.style.display = 'inline-flex';
+            }
+        });
+        if(addToHomeBtn) {
+            addToHomeBtn.addEventListener('click', async () => {
+                if (!deferredInstallPrompt) return;
+                deferredInstallPrompt.prompt();
+                await deferredInstallPrompt.userChoice;
+                deferredInstallPrompt = null;
+                addToHomeBtn.style.display = 'none';
+            });
+        }
+    }
     
     async function init() {
         loadUserSettings();
@@ -367,18 +413,12 @@ document.addEventListener('DOMContentLoaded', () => {
             playlistViewContainer.addEventListener('click', (e) => {
                 const targetLi = e.target.closest('li');
                 const downloadBtn = e.target.closest('.download-btn');
-                if (downloadBtn) {
-                    e.stopPropagation();
-                    handleDownloadClick(downloadBtn);
-                    return;
-                }
+                if (downloadBtn) { e.stopPropagation(); handleDownloadClick(downloadBtn); return; }
                 if (targetLi) {
                     const globalIndex = parseInt(targetLi.dataset.globalIndex);
                     const clickedSong = allSongs[globalIndex];
                     if (!clickedSong) return;
-                    if (clickedSong.category !== currentCategory) {
-                        loadCategory(clickedSong.category);
-                    }
+                    if (clickedSong.category !== currentCategory) loadCategory(clickedSong.category);
                     const localIndex = currentPlaylist.findIndex(s => s.publicId === clickedSong.publicId);
                     if (localIndex !== -1) loadSong(localIndex);
                 }
@@ -515,60 +555,11 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadSkins() { try { const response = await fetch(`${skinsPath}skins.json?_=${new Date().getTime()}`); if (!response.ok) throw new Error('No se encontró skins.json'); const skinFiles = await response.json(); skins = skinFiles.map(file => `${skinsPath}${file}`); if (skins.length > 0) { if (isNaN(currentSkinIndex) || currentSkinIndex < 0 || currentSkinIndex >= skins.length) { currentSkinIndex = 0; } const initialSkin = skins[currentSkinIndex]; const extension = initialSkin.split('.').pop(); if (['webm', 'mp4'].includes(extension)) { backgroundVideo.innerHTML = `<source src="${initialSkin}" type="video/${extension}">`; } else if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) { backgroundVideo.style.backgroundImage = `url('${initialSkin}')`; backgroundVideo.innerHTML = ''; } backgroundVideo.load(); backgroundVideo.play().catch(e => {}); } } catch (error) { console.warn("No se pudo cargar la lista de skins:", error.message); backgroundVideo.innerHTML = `<source src="assets/img/labplay/skins/skin03.webm" type="video/webm">`; backgroundVideo.load(); } }
     function togglePlayPause() { if (audioPlayer.paused) { audioPlayer.play().catch(e => console.error("Error al reproducir:", e)); } else { audioPlayer.pause(); } }
     
-    // 3. EJECUCIÓN: REGISTRO DEL SW, LISTENERS Y ARRANQUE DE LA APP
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').then(registration => {
-          console.log('Service Worker registrado con éxito:', registration.scope);
-          navigator.serviceWorker.ready.then(readyRegistration => {
-            if (readyRegistration.active) {
-                readyRegistration.active.postMessage({ action: 'GET_DOWNLOADED_SONGS' });
-            }
-          });
-        }).catch(err => {
-          console.log('Fallo en el registro del Service Worker:', err);
-        });
-      });
-
-      navigator.serviceWorker.addEventListener('message', event => {
-        if (!event.data) return;
-        const { action, songId, error, songIds } = event.data;
-        switch(action) {
-            case 'SONG_DOWNLOADED':
-                downloadedSongs.add(songId);
-                updateDownloadButtonStatus(songId, 'downloaded');
-                break;
-            case 'DOWNLOAD_ERROR':
-                updateDownloadButtonStatus(songId, 'error');
-                alert(`No se pudo descargar la canción. Inténtalo de nuevo.`);
-                break;
-            case 'DOWNLOADED_SONGS_LIST':
-                downloadedSongs = new Set(songIds);
-                updateAllDownloadButtons();
-                break;
-        }
-      });
-    }
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredInstallPrompt = e;
-      if (addToHomeBtn) {
-        addToHomeBtn.style.display = 'inline-flex';
-      }
-    });
-
-    if(addToHomeBtn) {
-        addToHomeBtn.addEventListener('click', async () => {
-          if (!deferredInstallPrompt) return;
-          deferredInstallPrompt.prompt();
-          await deferredInstallPrompt.userChoice;
-          deferredInstallPrompt = null;
-          addToHomeBtn.style.display = 'none';
-        });
-    }
-    
+    // 3. EJECUCIÓN INICIAL
+    setupServiceWorker();
+    setupPWAInstall();
     init();
+
 });
 </script>
 </body>
