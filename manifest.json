@@ -1,20 +1,21 @@
 {
   "name": "KAYLUM",
   "short_name": "KAYLUM",
-  "start_url": "index.html",
+  "start_url": "/kaylum/",
+  "scope": "/kaylum/",
   "display": "standalone",
   "background_color": "#0F121B",
   "theme_color": "#0F121B",
   "description": "KAYLUM: Canto de la Tierra. Una alternativa para escuchar y compartir música.",
   "icons": [
     {
-      "src": "assets/img/labplay/logokaylum.png",
+      "src": "/kaylum/assets/img/labplay/logokaylum.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "assets/img/labplay/logokaylum.png",
+      "src": "/kaylum/assets/img/labplay/logokaylum.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
