@@ -1,8 +1,8 @@
 // sw.js
-// Versión: 1.4 - Caché Robusto y Offline
+// Versión: 1.5 - Caché de skins corregido
 
 const SONGS_CACHE_NAME = 'kaylum-songs-cache-v1';
-const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v1.4'; // Incrementamos versión para forzar actualización
+const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v1.5'; // Incrementamos versión
 const ALL_CACHES = [SONGS_CACHE_NAME, STATIC_ASSETS_CACHE_NAME];
 const REPO_NAME = 'kaylum';
 
@@ -16,20 +16,22 @@ const PRECACHE_ASSETS = [
     `/${REPO_NAME}/assets/img/labplay/logokaylum.png`,
     `/${REPO_NAME}/assets/img/logo03.png`,
     `/${REPO_NAME}/assets/img/labplay/default-cover.jpg`,
-    `/${REPO_NAME}/assets/img/labplay/alterplayflux.png` // Imagen añadida
+    `/${REPO_NAME}/assets/img/labplay/alterplayflux.png`
 ];
 
 const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRxbKnkTFmkECMfd_cRKchEv2XGOHII6YlLj0M0ragfExCtRWB2S0qTIZYrrFCTk3sxxctY2dnVgUif/pub?output=csv';
 
-// Función para cachear las skins dinámicamente
+// ***** CORRECCIÓN AQUÍ *****
 async function cacheSkins() {
     try {
         const skinsPath = `/${REPO_NAME}/assets/img/labplay/skins/`;
-        const response = await fetch(`${skinsPath}skins.json?_=${new Date().getTime()}`);
-        if (!response.ok) throw new Error('No se pudo encontrar skins.json');
+        // La URL para el fetch debe ser absoluta, igual que las de precache.
+        const response = await fetch(`${self.location.origin}${skinsPath}skins.json?_=${new Date().getTime()}`);
+        if (!response.ok) throw new Error(`No se pudo encontrar skins.json. Status: ${response.status}`);
         
         const skinFiles = await response.json();
-        const skinUrlsToCache = skinFiles.map(file => `${skinsPath}${file}`);
+        // Las URLs a cachear también deben ser absolutas.
+        const skinUrlsToCache = skinFiles.map(file => `${self.location.origin}${skinsPath}${file}`);
         
         const cache = await caches.open(STATIC_ASSETS_CACHE_NAME);
         console.log('SW: Cacheando skins...', skinUrlsToCache);
@@ -47,7 +49,7 @@ self.addEventListener('install', event => {
                 console.log('SW: Pre-cacheando assets estáticos.');
                 return cache.addAll(PRECACHE_ASSETS);
             }),
-            cacheSkins()
+            cacheSkins() // Ahora esta función debería funcionar correctamente.
         ]).then(() => self.skipWaiting())
     );
 });
@@ -71,7 +73,6 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
 
-    // Estrategia Stale-While-Revalidate para la lista de canciones (CSV)
     if (url.href.startsWith(GOOGLE_SHEET_URL)) {
         event.respondWith(
             caches.open(STATIC_ASSETS_CACHE_NAME).then(async (cache) => {
@@ -79,16 +80,13 @@ self.addEventListener('fetch', event => {
                 const networkFetch = fetch(event.request).then(networkResponse => {
                     cache.put(event.request, networkResponse.clone());
                     return networkResponse;
-                }).catch(() => {
-                    // Si el fetch falla (offline), no hacemos nada, se usará el de caché si existe
-                });
+                }).catch(() => {});
                 return cachedResponse || networkFetch;
             })
         );
         return;
     }
     
-    // Estrategia Cache-First para las canciones descargadas
     if (url.hostname === 'res.cloudinary.com') {
         event.respondWith(
             caches.match(event.request).then(cachedResponse => {
@@ -98,7 +96,6 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Estrategia Cache-First para todos los demás assets
     event.respondWith(
         caches.match(event.request).then(cachedResponse => {
             return cachedResponse || fetch(event.request);
