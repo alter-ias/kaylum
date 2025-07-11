@@ -320,7 +320,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!('serviceWorker' in navigator)) return;
 
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js').then(registration => {
+            // ***** CORRECCIÓN AQUÍ *****
+            // Usamos la ruta completa al SW y especificamos el scope para GitHub Pages.
+            navigator.serviceWorker.register('/kaylum/sw.js', { scope: '/kaylum/' }).then(registration => {
                 console.log('Service Worker registrado con éxito:', registration.scope);
                 navigator.serviceWorker.ready.then(readyRegistration => {
                     if (readyRegistration.active) {
