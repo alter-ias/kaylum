@@ -40,8 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let deferredInstallPrompt = null;
     const cloudinaryBaseUrl = 'https://res.cloudinary.com/dy9cywux2/video/upload/';
     const googleSheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRxbKnkTFmkECMfd_cRKchEv2XGOHII6YlLj0M0ragfExCtRWB2S0qTIZYrrFCTk3sxxctY2dnVgUif/pub?output=csv';
-    const skinsPath = 'assets/img/labplay/skins/';
-    const defaultCover = 'assets/img/labplay/default-cover.jpg';
+    const skinsPath = '/assets/img/labplay/skins/';
+    const defaultCover = '/assets/img/labplay/default-cover.jpg';
     const songsPerPage = 5;
     let playlistsData = {};
     let currentCategory = '';
