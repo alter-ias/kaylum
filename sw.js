@@ -1,43 +1,48 @@
-const CACHE_NAME = 'kaylum-cache-v2'; // Cambia la versión si haces cambios para forzar la actualización
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/player.html',
-  '/style.css',
-  '/app.js',
-  'https://cdn.jsdelivr.net/npm/fuse.js@7.0.0'
+const CACHE_NAME = 'kaylum-cache-v1';
+const URLS_TO_CACHE = [
+  'index.html',
+  'player.html'
 ];
 
+// Instala el Service Worker y guarda el "cascarón" de la app en caché.
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Cache abierto');
-        return cache.addAll(urlsToCache);
+        console.log('SW: Cache abierto, guardando archivos principales.');
+        return cache.addAll(URLS_TO_CACHE);
       })
   );
 });
 
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        return response || fetch(event.request);
-      })
-  );
-});
-
+// Activa el SW y limpia cachés antiguas si las hubiera.
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+          if (cacheName !== CACHE_NAME) {
             return caches.delete(cacheName);
           }
         })
       );
     })
+  );
+});
+
+// Intercepta las peticiones.
+self.addEventListener('fetch', event => {
+  // Para la API de Google, siempre ir a la red para tener datos frescos.
+  if (event.request.url.includes('docs.google.com')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+  
+  // Para todo lo demás, intenta servir desde la caché primero.
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        return response || fetch(event.request);
+      })
   );
 });
