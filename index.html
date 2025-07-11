@@ -5,13 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KAYLUM - Canto de la Tierra</title>
     
-    <!-- NUEVO: Enlace al Manifest -->
     <link rel="manifest" href="manifest.json">
-    
-    <!-- NUEVO: Color de la barra de estado en móviles -->
     <meta name="theme-color" content="#0F121B"/>
     
-    <!-- Íconos -->
     <link rel="icon" type="image/png" href="assets/img/labplay/logokaylum.png">
     <link rel="apple-touch-icon" href="assets/img/labplay/logokaylum.png">
     
@@ -27,7 +23,6 @@
             --secondary-text-color: #b3b3b3;
             --player-border-color: rgba(255, 255, 255, 0.4);
             --text-shadow: 0px 2px 5px rgba(0, 0, 0, 0.7);
-            /* --> NUEVO: Color para el estado descargado */
             --downloaded-color: #32a852; 
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -103,12 +98,9 @@
         #about-content p:last-child { margin-bottom: 0; }
         #about-content.is-open { max-height: 2000px; padding: 30px 30px 30px; }
         .flux-diagram { width: 100%; max-width: 500px; border-radius: 10px; margin: 25px auto; border: 1px solid var(--player-border-color); display: block; }
-        
         .page-footer { padding: 20px 0 40px; text-align: center; }
         #add-to-home-btn { display: none; background-color: transparent; border: 1px solid var(--player-border-color); color: var(--text-color); font-family: 'Montserrat', sans-serif; font-weight: 500; font-size: 1rem; padding: 10px 20px; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; align-items: center; gap: 10px; }
         #add-to-home-btn:hover { background-color: rgba(255, 255, 255, 0.1); border-color: var(--text-color); }
-
-        /* --> NUEVO: Estilos para el botón de descarga */
         .playlist-view li .download-btn {
             background: none;
             border: none;
@@ -117,20 +109,14 @@
             cursor: pointer;
             transition: color 0.3s ease, transform 0.2s ease;
             padding: 5px;
-            margin-left: auto; /* Empuja el botón a la derecha */
+            margin-left: auto;
         }
         .playlist-view li .download-btn:hover:not(:disabled) {
             color: var(--text-color);
             transform: scale(1.1);
         }
-        .playlist-view li .download-btn.downloaded {
-            color: var(--downloaded-color);
-        }
-        .playlist-view li .download-btn:disabled {
-            cursor: not-allowed;
-            opacity: 0.8;
-        }
-        /* --> NUEVO: Spinner para el estado "descargando" */
+        .playlist-view li .download-btn.downloaded { color: var(--downloaded-color); }
+        .playlist-view li .download-btn:disabled { cursor: not-allowed; opacity: 0.8; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .spinner {
             display: inline-block;
@@ -146,7 +132,6 @@
 <body>
     <div class="page-wrapper">
         <video autoplay muted loop playsinline id="background-video"></video>
-        <!-- Tu header y main se mantienen igual -->
         <header class="main-header container">
             <div class="logo-container">
                 <div class="logo">
@@ -188,7 +173,6 @@
                 <div class="adventure-mode-container">
                     <button id="adventure-mode-btn">MÁQUINA DEL TIEMPO</button>
                 </div>
-    
                 <div class="personalization-section">
                     <button id="change-skin-btn" class="personalization-btn">
                         <i class="bi bi-easel"></i> Cambiar Skin
@@ -223,7 +207,6 @@
                 </div>
             </div>
         </section>
-      
         <footer class="page-footer container">
             <button id="add-to-home-btn">
                 <i class="bi bi-download"></i>
@@ -233,47 +216,56 @@
     </div>
 
 <script>
-// --- REGISTRO DEL SERVICE WORKER ---
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').then(registration => {
-      console.log('Service Worker registrado con éxito:', registration.scope);
-      
-      // --> NUEVO: Pedir la lista de canciones ya cacheadas al cargar
-      navigator.serviceWorker.ready.then(readyRegistration => {
-        // Asegurarse de que el SW está activo antes de enviar el mensaje
-        if (readyRegistration.active) {
-            readyRegistration.active.postMessage({ action: 'GET_DOWNLOADED_SONGS' });
-        }
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- CÓDIGO DEL SERVICE WORKER (REGISTRO Y COMUNICACIÓN) ---
+    // Lo ponemos aquí para que se ejecute después de que el DOM esté listo,
+    // y antes de que definamos las funciones que usará.
+    if ('serviceWorker' in navigator) {
+      // Usamos window.addEventListener('load') para registrar el SW después de que la página
+      // y todos sus recursos (imágenes, etc.) se hayan cargado. Esto evita que el
+      // registro del SW compita por ancho de banda con la carga inicial de la página.
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').then(registration => {
+          console.log('Service Worker registrado con éxito:', registration.scope);
+          
+          // Una vez que el SW está listo y activo, le pedimos la lista de canciones ya descargadas.
+          navigator.serviceWorker.ready.then(readyRegistration => {
+            if (readyRegistration.active) {
+                readyRegistration.active.postMessage({ action: 'GET_DOWNLOADED_SONGS' });
+            }
+          });
+
+        }).catch(err => {
+          console.log('Fallo en el registro del Service Worker:', err);
+        });
       });
 
-    }).catch(err => {
-      console.log('Fallo en el registro del Service Worker:', err);
-    });
-  });
+      // Este listener escucha TODOS los mensajes que el Service Worker envíe a la página.
+      navigator.serviceWorker.addEventListener('message', event => {
+        if (!event.data) return;
+        const { action, songId, error, songIds } = event.data;
 
-  // --> NUEVO: Escuchar mensajes del Service Worker
-  navigator.serviceWorker.addEventListener('message', event => {
-    if (!event.data) return;
-    const { action, songId, error } = event.data;
-
-    if (action === 'SONG_DOWNLOADED') {
-        console.log(`Canción ${songId} descargada y cacheada.`);
-        downloadedSongs.add(songId);
-        updateDownloadButtonStatus(songId, 'downloaded');
-    } else if (action === 'DOWNLOAD_ERROR') {
-        console.error(`Error al descargar la canción ${songId}:`, error);
-        updateDownloadButtonStatus(songId, 'error');
-        alert(`No se pudo descargar la canción. Inténtalo de nuevo.`);
-    } else if (action === 'DOWNLOADED_SONGS_LIST') {
-        console.log('Lista de canciones cacheadas recibida:', event.data.songIds);
-        downloadedSongs = new Set(event.data.songIds);
-        updateAllDownloadButtons(); // Actualiza todos los botones visibles
+        switch(action) {
+            case 'SONG_DOWNLOADED':
+                console.log(`Canción ${songId} descargada y cacheada.`);
+                downloadedSongs.add(songId);
+                updateDownloadButtonStatus(songId, 'downloaded');
+                break;
+            case 'DOWNLOAD_ERROR':
+                console.error(`Error al descargar la canción ${songId}:`, error);
+                updateDownloadButtonStatus(songId, 'error');
+                alert(`No se pudo descargar la canción. Inténtalo de nuevo.`);
+                break;
+            case 'DOWNLOADED_SONGS_LIST':
+                console.log('Lista de canciones cacheadas recibida:', songIds);
+                downloadedSongs = new Set(songIds);
+                updateAllDownloadButtons();
+                break;
+        }
+      });
     }
-  });
-}
 
-document.addEventListener('DOMContentLoaded', () => {
     // --- ELEMENTOS DEL DOM ---
     const addToHomeBtn = document.getElementById('add-to-home-btn');
     const songTitleEl = document.getElementById('song-title');
@@ -299,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const shareBtn = document.getElementById('share-btn');
     const addToFavoritesBtn = document.getElementById('add-to-favorites-btn');
 
-    // --- ESTADO ---
+    // --- ESTADO DE LA APLICACIÓN ---
     let deferredInstallPrompt = null;
     const cloudinaryBaseUrl = 'https://res.cloudinary.com/dy9cywux2/video/upload/';
     const googleSheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRxbKnkTFmkECMfd_cRKchEv2XGOHII6YlLj0M0ragfExCtRWB2S0qTIZYrrFCTk3sxxctY2dnVgUif/pub?output=csv';
@@ -318,9 +310,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSkinIndex = 0;
     let isRepeatActive = false;
     let userFavorites = [];
-    let downloadedSongs = new Set(); // --> NUEVO: Para rastrear canciones descargadas
+    let downloadedSongs = new Set(); 
 
-    // --- LÓGICA DE INSTALACIÓN ---
+    // --- LÓGICA DE INSTALACIÓN PWA ---
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredInstallPrompt = e;
@@ -340,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --> NUEVO: Función para manejar el clic en el botón de descarga
+    // --- FUNCIONES PARA DESCARGA Y CACHÉ ---
     function handleDownloadClick(button) {
         const songId = button.dataset.songId;
         const songUrl = button.dataset.songUrl;
@@ -361,7 +353,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --> NUEVO: Función para actualizar el estado visual de un botón de descarga
     function updateDownloadButtonStatus(songId, status) {
         const button = document.querySelector(`.download-btn[data-song-id="${songId}"]`);
         if (!button) return;
@@ -376,7 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 button.innerHTML = '<i class="bi bi-cloud-check-fill"></i>';
                 button.classList.add('downloaded');
                 button.title = 'Descargado';
-                button.disabled = true; // Deshabilitado para no poder volver a descargar
+                button.disabled = true;
                 break;
             case 'error':
             case 'not-downloaded':
@@ -387,7 +378,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --> NUEVO: Función para actualizar todos los botones al cargar la lista
     function updateAllDownloadButtons() {
         document.querySelectorAll('.download-btn').forEach(button => {
             const songId = button.dataset.songId;
@@ -399,36 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --> MODIFICADO: `renderPlaylistView` para añadir el botón
-    function renderPlaylistView(playlistToRender) {
-        if (!playlistToRender || playlistToRender.length === 0) {
-            playlistViewContainer.innerHTML = `<p style="text-align:center; padding: 20px 0; color:var(--secondary-text-color);">${searchInput.value.trim() ? 'No se encontraron resultados.' : 'No hay canciones en esta categoría.'}</p>`;
-            return;
-        }
-        const listHTML = `<ol>${playlistToRender.map((song) => {
-            const originalIndex = allSongs.findIndex(s => s.publicId === song.publicId);
-            const isDownloaded = downloadedSongs.has(song.publicId);
-            const iconClass = isDownloaded ? 'bi-cloud-check-fill' : 'bi-cloud-arrow-down';
-            const buttonTitle = isDownloaded ? 'Descargado' : 'Descargar para escuchar sin conexión';
-            const buttonDisabled = isDownloaded ? 'disabled' : '';
-
-            return `<li data-global-index="${originalIndex}">
-                        <i class="bi bi-music-note-beamed icon"></i>
-                        <div class="track-details">
-                            <div class="title">${song.title}</div>
-                            <div class="artist">${song.artist}</div>
-                        </div>
-                        <button class="download-btn ${isDownloaded ? 'downloaded' : ''}" data-song-id="${song.publicId}" data-song-url="${song.publicUrl}" title="${buttonTitle}" ${buttonDisabled}>
-                            <i class="bi ${iconClass}"></i>
-                        </button>
-                    </li>`;
-        }).join('')}</ol>`;
-        
-        playlistViewContainer.innerHTML = listHTML;
-        updatePlaylistHighlight();
-        updateAllDownloadButtons();
-    }
-
+    // --- FUNCIÓN DE INICIALIZACIÓN PRINCIPAL ---
     async function init() {
         loadUserSettings();
         await loadSkins();
@@ -475,13 +436,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             audioPlayer.addEventListener('ended', handleSongEnd);
-            // --> MODIFICADO: El listener de click ahora distingue entre reproducir y descargar
             playlistViewContainer.addEventListener('click', (e) => {
                 const targetLi = e.target.closest('li');
                 const downloadBtn = e.target.closest('.download-btn');
 
                 if (downloadBtn) {
-                    e.stopPropagation(); // Evita que se dispare el evento del 'li'
+                    e.stopPropagation();
                     handleDownloadClick(downloadBtn);
                     return;
                 }
@@ -540,7 +500,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderCategoryTabs();
                 loadCategory(adventureCategoryName);
             });
-            
             changeSkinBtn.addEventListener('click', () => {
                 if(skins.length === 0) return;
                 currentSkinIndex = (currentSkinIndex + 1) % skins.length;
@@ -561,21 +520,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     backgroundVideo.style.opacity = 1;
                 }, 500);
             });
-            
             colorPicker.addEventListener('input', (e) => {
                 const newColor = e.target.value;
                 document.documentElement.style.setProperty('--text-color', newColor);
                 localStorage.setItem('kaylum_textColor', newColor);
             });
-
             document.addEventListener('keydown', (e) => {
-                if (document.activeElement === searchInput) {
-                    return;
-                }
-                if (e.code === 'Space') {
-                    e.preventDefault();
-                    togglePlayPause();
-                }
+                if (document.activeElement === searchInput) { return; }
+                if (e.code === 'Space') { e.preventDefault(); togglePlayPause(); }
             });
 
             if ('mediaSession' in navigator) {
@@ -583,19 +535,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 navigator.mediaSession.setActionHandler('pause', () => audioPlayer.pause());
                 navigator.mediaSession.setActionHandler('previoustrack', playPrevSong);
                 navigator.mediaSession.setActionHandler('nexttrack', playNextSong);
-
                 try {
-                    navigator.mediaSession.setActionHandler('seekbackward', (details) => {
-                        audioPlayer.currentTime = Math.max(audioPlayer.currentTime - (details.seekOffset || 10), 0);
-                    });
-                    navigator.mediaSession.setActionHandler('seekforward', (details) => {
-                        audioPlayer.currentTime = Math.min(audioPlayer.currentTime + (details.seekOffset || 10), audioPlayer.duration);
-                    });
-                } catch (error) {
-                    console.log('Los controles de seek no son soportados por este navegador.');
-                }
+                    navigator.mediaSession.setActionHandler('seekbackward', (details) => { audioPlayer.currentTime = Math.max(audioPlayer.currentTime - (details.seekOffset || 10), 0); });
+                    navigator.mediaSession.setActionHandler('seekforward', (details) => { audioPlayer.currentTime = Math.min(audioPlayer.currentTime + (details.seekOffset || 10), audioPlayer.duration); });
+                } catch (error) { console.log('Los controles de seek no son soportados por este navegador.'); }
             }
-
         } catch (error) {
             console.error("Error al inicializar:", error);
             songTitleEl.textContent = "Error al cargar";
@@ -603,7 +547,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- RESTO DE FUNCIONES AUXILIARES (sin cambios significativos, solo llamadas a las nuevas funciones) ---
+    // --- FUNCIONES AUXILIARES ---
+    function renderPlaylistView(playlistToRender) {
+        if (!playlistToRender || playlistToRender.length === 0) {
+            playlistViewContainer.innerHTML = `<p style="text-align:center; padding: 20px 0; color:var(--secondary-text-color);">${searchInput.value.trim() ? 'No se encontraron resultados.' : 'No hay canciones en esta categoría.'}</p>`;
+            return;
+        }
+        const listHTML = `<ol>${playlistToRender.map((song) => {
+            const originalIndex = allSongs.findIndex(s => s.publicId === song.publicId);
+            const isDownloaded = downloadedSongs.has(song.publicId);
+            const iconClass = isDownloaded ? 'bi-cloud-check-fill' : 'bi-cloud-arrow-down';
+            const buttonTitle = isDownloaded ? 'Descargado' : 'Descargar para escuchar sin conexión';
+            const buttonDisabled = isDownloaded ? 'disabled' : '';
+
+            return `<li data-global-index="${originalIndex}">
+                        <i class="bi bi-music-note-beamed icon"></i>
+                        <div class="track-details">
+                            <div class="title">${song.title}</div>
+                            <div class="artist">${song.artist}</div>
+                        </div>
+                        <button class="download-btn ${isDownloaded ? 'downloaded' : ''}" data-song-id="${song.publicId}" data-song-url="${song.publicUrl}" title="${buttonTitle}" ${buttonDisabled}>
+                            <i class="bi ${iconClass}"></i>
+                        </button>
+                    </li>`;
+        }).join('')}</ol>`;
+        playlistViewContainer.innerHTML = listHTML;
+        updatePlaylistHighlight();
+        updateAllDownloadButtons();
+    }
     function loadUserSettings() { const savedColor = localStorage.getItem('kaylum_textColor'); if (savedColor) { document.documentElement.style.setProperty('--text-color', savedColor); colorPicker.value = savedColor; } const savedSkinIndex = localStorage.getItem('kaylum_skinIndex'); if (savedSkinIndex !== null) { currentSkinIndex = parseInt(savedSkinIndex, 10); } const savedFavorites = localStorage.getItem('kaylum_favorites'); if (savedFavorites) { userFavorites = JSON.parse(savedFavorites); } if (userFavorites.length > 0) { playlistsData['Favoritos'] = []; } }
     function renderCategoryTabs() { const categories = Object.keys(playlistsData); categoryTabsContainer.innerHTML = categories.map(c => { if (c === 'Favoritos') { return `<button data-category="Favoritos"><i class="bi bi-star"></i> Favoritos</button>`; } return `<button data-category="${c}">${c}</button>`; }).join(''); document.querySelectorAll('.category-tabs button').forEach(btn => { btn.classList.toggle('active', btn.dataset.category === currentCategory); }); }
     function toggleFavorite() { if (currentSongIndex < 0) return; const songId = currentPlaylist[currentSongIndex].publicId; const favoriteIndex = userFavorites.indexOf(songId); const hadFavoritesBefore = userFavorites.length > 0; if (favoriteIndex > -1) { userFavorites.splice(favoriteIndex, 1); } else { userFavorites.push(songId); } localStorage.setItem('kaylum_favorites', JSON.stringify(userFavorites)); const hasFavoritesNow = userFavorites.length > 0; if (hasFavoritesNow && !hadFavoritesBefore) { playlistsData['Favoritos'] = []; renderCategoryTabs(); } else if (!hasFavoritesNow && hadFavoritesBefore) { delete playlistsData['Favoritos']; if (currentCategory === 'Favoritos') { const firstCategory = Object.keys(playlistsData)[0]; if (firstCategory) loadCategory(firstCategory); } else { renderCategoryTabs(); } } updateFavoriteButton(); }
@@ -624,6 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadSkins() { try { const response = await fetch(`${skinsPath}skins.json?_=${new Date().getTime()}`); if (!response.ok) throw new Error('No se encontró skins.json'); const skinFiles = await response.json(); skins = skinFiles.map(file => `${skinsPath}${file}`); if (skins.length > 0) { if (isNaN(currentSkinIndex) || currentSkinIndex < 0 || currentSkinIndex >= skins.length) { currentSkinIndex = 0; } const initialSkin = skins[currentSkinIndex]; const extension = initialSkin.split('.').pop(); if (['webm', 'mp4'].includes(extension)) { backgroundVideo.innerHTML = `<source src="${initialSkin}" type="video/${extension}">`; } else if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) { backgroundVideo.style.backgroundImage = `url('${initialSkin}')`; backgroundVideo.innerHTML = ''; } backgroundVideo.load(); backgroundVideo.play().catch(e => {}); } } catch (error) { console.warn("No se pudo cargar la lista de skins:", error.message); backgroundVideo.innerHTML = `<source src="assets/img/labplay/skins/skin03.webm" type="video/webm">`; backgroundVideo.load(); } }
     function togglePlayPause() { if (audioPlayer.paused) { audioPlayer.play().catch(e => console.error("Error al reproducir:", e)); } else { audioPlayer.pause(); } }
 
+    // --- INICIAR LA APLICACIÓN ---
     init();
 });
 </script>
