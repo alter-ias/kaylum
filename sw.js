@@ -1,7 +1,7 @@
 // sw.js
-// Versión: 2.0 - Lógica de Skins Offline y UX de Carga mejoradas
+// Versión: 2.1 - Descarga de carátulas para modo offline
 const SONGS_CACHE_NAME = 'kaylum-songs-cache-v1';
-const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v2.0'; // Incrementamos versión
+const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v2.1'; // Incrementamos versión
 const ALL_CACHES = [SONGS_CACHE_NAME, STATIC_ASSETS_CACHE_NAME];
 const REPO_NAME = 'kaylum';
 
@@ -54,9 +54,6 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
 
-    // Estrategia "Network first, then cache" para el CSV y la lista de skins.
-    // Esto asegura que si hay conexión, se obtienen los datos más frescos.
-    // Si no hay conexión, se usa la versión guardada en caché.
     if (url.href.startsWith(GOOGLE_SHEET_URL) || url.pathname.endsWith('skins.json')) {
         event.respondWith(
             caches.open(STATIC_ASSETS_CACHE_NAME).then(async (cache) => {
@@ -73,7 +70,6 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Estrategia "Cache first" para todo lo demás (canciones, imágenes, skins individuales, etc.)
     event.respondWith(
         caches.match(event.request).then(cachedResponse => {
             return cachedResponse || fetch(event.request);
@@ -83,44 +79,68 @@ self.addEventListener('fetch', event => {
 
 self.addEventListener('message', event => {
     if (!event.data) return;
-    const { action, songId, url } = event.data;
+    const { action, songId, songUrl, coverUrl } = event.data; // Se extrae coverUrl
     const clientId = event.source ? event.source.id : undefined;
 
     switch (action) {
-        case 'DOWNLOAD_SONG':
-            event.waitUntil(handleDownload(songId, url, clientId));
+        // MODIFICADO: Nueva acción para manejar la descarga conjunta.
+        case 'DOWNLOAD_SONG_WITH_COVER':
+            event.waitUntil(handleSongAndCoverDownload(songId, songUrl, coverUrl, clientId));
             break;
         case 'GET_DOWNLOADED_SONGS':
             event.waitUntil(sendDownloadedSongsList(clientId));
             break;
         case 'DOWNLOAD_SKIN':
-            event.waitUntil(handleAssetDownload(url, clientId, 'SKIN_DOWNLOADED', 'SKIN_DOWNLOAD_ERROR'));
+            event.waitUntil(handleAssetDownload(event.data.url, clientId, 'SKIN_DOWNLOADED', 'SKIN_DOWNLOAD_ERROR'));
             break;
-        // NUEVO: Acción específica para descargar y cachear el archivo skins.json
         case 'DOWNLOAD_SKIN_LIST':
-            event.waitUntil(handleAssetDownload(url, clientId, 'SKIN_LIST_DOWNLOADED', 'SKIN_DOWNLOAD_ERROR'));
+            event.waitUntil(handleAssetDownload(event.data.url, clientId, 'SKIN_LIST_DOWNLOADED', 'SKIN_DOWNLOAD_ERROR'));
             break;
     }
 });
 
-async function handleDownload(songId, url, clientId) {
+// NUEVO: Función que descarga y guarda la canción y su carátula.
+async function handleSongAndCoverDownload(songId, songUrl, coverUrl, clientId) {
     try {
-        const cache = await caches.open(SONGS_CACHE_NAME);
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Red no OK: ${response.statusText}`);
-        await cache.put(url, response.clone());
+        const downloadPromises = [];
+        
+        // Promesa para descargar la canción
+        const songPromise = caches.open(SONGS_CACHE_NAME).then(async (cache) => {
+            const response = await fetch(songUrl);
+            if (!response.ok) throw new Error(`Red no OK para canción: ${songUrl}`);
+            return cache.put(songUrl, response);
+        });
+        downloadPromises.push(songPromise);
+
+        // Promesa para descargar la carátula (si existe la URL)
+        if (coverUrl && coverUrl.startsWith('http')) {
+            const coverPromise = caches.open(STATIC_ASSETS_CACHE_NAME).then(async (cache) => {
+                // Se usa 'no-cors' para URLs de terceros (como Google Images) que podrían no tener cabeceras CORS correctas.
+                // Esto permite guardar la imagen, aunque no podamos inspeccionar su contenido desde el script.
+                const request = new Request(coverUrl, { mode: 'no-cors' });
+                const response = await fetch(request);
+                // En modo 'no-cors', la respuesta es "opaca" y su status es 0, pero se puede cachear.
+                return cache.put(coverUrl, response);
+            });
+            downloadPromises.push(coverPromise);
+        }
+
+        // Se espera a que todas las descargas terminen
+        await Promise.all(downloadPromises);
+
+        console.log(`SW: Canción y carátula para ${songId} descargadas.`);
         await sendMessageToClient(clientId, { action: 'SONG_DOWNLOADED', songId: songId });
+
     } catch (error) {
-        console.error(`SW: Fallo al descargar canción ${songId}.`, error);
+        console.error(`SW: Fallo al descargar canción o carátula para ${songId}.`, error);
         await sendMessageToClient(clientId, { action: 'DOWNLOAD_ERROR', songId: songId, error: error.message });
     }
 }
 
-// NUEVO: Función genérica para descargar cualquier asset (skin, json) al caché estático.
 async function handleAssetDownload(url, clientId, successAction, errorAction) {
     try {
         const cache = await caches.open(STATIC_ASSETS_CACHE_NAME);
-        const request = new Request(url, { cache: 'reload' }); // Forzar la recarga desde la red
+        const request = new Request(url, { cache: 'reload' });
         const response = await fetch(request);
         if (!response.ok) throw new Error(`Red no OK para asset: ${url}`);
         await cache.put(url, response.clone());
