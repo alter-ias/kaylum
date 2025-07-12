@@ -285,15 +285,31 @@ document.addEventListener('DOMContentLoaded', () => {
     function saveDownloadedSongMetadata(songObject) { const allMetadata = getDownloadedSongMetadata(); allMetadata[songObject.publicId] = songObject; localStorage.setItem('kaylum_downloaded_metadata', JSON.stringify(allMetadata));}
 
     // --- Funciones de Descarga ---
+    // MODIFICADO: Ahora envía también la URL de la carátula al Service Worker.
     function handleDownloadClick(button) {
         const songId = button.dataset.songId;
         const songUrl = button.dataset.songUrl;
         const songToDownload = allSongs.find(song => song.publicId === songId);
-        if (!songToDownload || !navigator.serviceWorker.controller) return;
+
+        if (!songToDownload || !navigator.serviceWorker.controller) {
+            alert("No se pudo iniciar la descarga. Revisa tu conexión o recarga la página.");
+            return;
+        }
+
         updateDownloadButtonStatus(songId, 'downloading');
         saveDownloadedSongMetadata(songToDownload);
-        navigator.serviceWorker.controller.postMessage({ action: 'DOWNLOAD_SONG', songId: songId, url: songUrl });
+        
+        // Obtenemos la URL de la carátula. Puede estar vacía.
+        const coverUrl = songToDownload.cover || '';
+
+        navigator.serviceWorker.controller.postMessage({ 
+            action: 'DOWNLOAD_SONG_WITH_COVER', // Nueva acción más descriptiva
+            songId: songId, 
+            songUrl: songUrl,
+            coverUrl: coverUrl // Se envía la URL de la carátula
+        });
     }
+
     function updateDownloadButtonStatus(songId, status) {
         document.querySelectorAll(`.download-btn[data-song-id="${songId}"]`).forEach(button => {
             if (!button) return;
@@ -378,7 +394,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    // **** CÓDIGO RESTAURADO ****
     function setupPWAInstall() {
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -388,7 +403,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 addToHomeBtn.style.display = 'inline-flex';
             }
         });
-
         if(addToHomeBtn) {
             addToHomeBtn.addEventListener('click', async () => {
                 if (!deferredInstallPrompt) return;
@@ -678,7 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 3. EJECUCIÓN INICIAL
     setupServiceWorker();
-    setupPWAInstall(); // **** LLAMADA RESTAURADA ****
+    setupPWAInstall();
     init();
 
 });
