@@ -313,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
             else { updateDownloadButtonStatus(songId, 'not-downloaded'); }
         });
     }
-    // MODIFICADO: Lógica de descarga de skins mejorada.
     async function handleDownloadSkinsClick() {
         if (!navigator.serviceWorker.controller) { alert('El controlador de la aplicación no está listo. Por favor, recarga la página.'); return; }
         downloadSkinsBtn.disabled = true;
@@ -322,19 +321,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`${skinsPath}skins.json`);
             if (!response.ok) throw new Error('No se pudo obtener la lista de skins.');
             const skinFiles = await response.json();
-            
-            // Primero, le decimos al SW que guarde la lista de skins (skins.json)
             navigator.serviceWorker.controller.postMessage({ action: 'DOWNLOAD_SKIN_LIST', url: `${skinsPath}skins.json` });
-
-            // Luego, le decimos que guarde cada skin individual.
             skinFiles.forEach(file => {
                 navigator.serviceWorker.controller.postMessage({ action: 'DOWNLOAD_SKIN', url: `${skinsPath}${file}` });
             });
-
-            // Total de descargas = la lista (1) + cada archivo de skin.
             const totalDownloads = skinFiles.length + 1;
             let downloadedCount = 0;
-
             const skinDownloadListener = (event) => {
                 const action = event.data.action;
                 if (action === 'SKIN_DOWNLOADED' || action === 'SKIN_LIST_DOWNLOADED' || action === 'SKIN_DOWNLOAD_ERROR') {
@@ -345,7 +337,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         downloadSkinsBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Skins Guardados';
                         localStorage.setItem('kaylum_skins_downloaded', 'true');
                         alert('¡Skins guardados! Ahora puedes cambiarlos sin conexión.');
-                        // Actualizamos la lista de skins en la app por si no estaba cargada
                         loadSkins();
                     }
                 }
@@ -387,10 +378,25 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    // **** CÓDIGO RESTAURADO ****
     function setupPWAInstall() {
-        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstallPrompt = e; if (addToHomeBtn) { addToHomeBtn.style.display = 'inline-flex'; } });
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            if (addToHomeBtn) {
+                console.log('PWA: Lista para instalar. Mostrando botón.');
+                addToHomeBtn.style.display = 'inline-flex';
+            }
+        });
+
         if(addToHomeBtn) {
-            addToHomeBtn.addEventListener('click', async () => { if (!deferredInstallPrompt) return; deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice; deferredInstallPrompt = null; addToHomeBtn.style.display = 'none'; });
+            addToHomeBtn.addEventListener('click', async () => {
+                if (!deferredInstallPrompt) return;
+                deferredInstallPrompt.prompt();
+                await deferredInstallPrompt.userChoice;
+                deferredInstallPrompt = null;
+                addToHomeBtn.style.display = 'none';
+            });
         }
     }
     
@@ -501,7 +507,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderPaginationControls(totalItems) { const totalPages = Math.ceil(totalItems / songsPerPage); paginationControlsContainer.style.display = totalPages > 1 ? 'flex' : 'none'; if (totalPages <= 1) { paginationControlsContainer.innerHTML = ''; return; } let buttonsHTML = `<button data-page="prev" ${currentPage === 1 ? 'disabled' : ''}><</button>`; let startPage = Math.max(1, currentPage - 1); let endPage = Math.min(totalPages, currentPage + 1); if (currentPage === 1) endPage = Math.min(totalPages, 3); if (currentPage === totalPages) startPage = Math.max(1, totalPages - 2); for (let i = startPage; i <= endPage; i++) { buttonsHTML += `<button data-page="${i}" class="${i === currentPage ? 'active' : ''}">${i}</button>`; } buttonsHTML += `<button data-page="next" ${currentPage === totalPages ? 'disabled' : ''}>></button>`; paginationControlsContainer.innerHTML = buttonsHTML; }
 
     // --- Carga Inicial ---
-    // MODIFICADO: Se eliminó el timestamp para permitir que el SW intercepte la solicitud.
     async function loadSkins() { 
         try { 
             const response = await fetch(`${skinsPath}skins.json`);
@@ -534,9 +539,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     async function init() {
-        // NUEVO: Mensaje de carga inicial.
         playlistViewContainer.innerHTML = `<p style="text-align:center; padding: 40px 0; color:var(--secondary-text-color); font-style: italic;">Cargando música... <span class="spinner"></span></p>`;
-        
         loadUserSettings();
         await loadSkins();
         try {
@@ -557,7 +560,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (allSongs.length === 0) throw new Error("No se parsearon canciones.");
         } catch (error) {
             console.warn("MODO OFFLINE activado. Error:", error.message);
-            // NUEVO: Mensaje de carga de archivos locales.
             playlistViewContainer.innerHTML = `<p style="text-align:center; padding: 40px 0; color:var(--secondary-text-color); font-style: italic;">Leyendo tus archivos guardados... <span class="spinner"></span></p>`;
             const savedMetadata = getDownloadedSongMetadata();
             allSongs = Object.values(savedMetadata);
@@ -571,9 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fuse = new Fuse(allSongs, { keys: ['title', 'artist', 'information'], threshold: 0.4, minMatchCharLength: 2 });
         if (userFavorites.length > 0) playlistsData['Favoritos'] = [];
         if (downloadedSongs.size > 0) playlistsData['Guardados'] = [];
-
         renderCategoryTabs();
-        
         if (allSongs.length > 0) {
             const urlParams = new URLSearchParams(window.location.search);
             const songIdFromUrl = urlParams.get('song');
@@ -641,12 +641,9 @@ document.addEventListener('DOMContentLoaded', () => {
             renderCategoryTabs();
             loadCategory('Aventura Musical');
         });
-        // MODIFICADO: Mensaje de alerta mejorado.
         changeSkinBtn.addEventListener('click', () => {
             if (skins.length === 0) {
-                const message = navigator.onLine ? 
-                    "No hay skins disponibles. Presiona 'Guardar Skins' primero." : 
-                    "No hay skins guardados para usar sin conexión. Conéctate a internet y guárdalos.";
+                const message = navigator.onLine ? "No hay skins disponibles. Presiona 'Guardar Skins' primero." : "No hay skins guardados para usar sin conexión. Conéctate a internet y guárdalos.";
                 alert(message);
                 return;
             }
@@ -681,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 3. EJECUCIÓN INICIAL
     setupServiceWorker();
-    setupPWAInstall();
+    setupPWAInstall(); // **** LLAMADA RESTAURADA ****
     init();
 
 });
