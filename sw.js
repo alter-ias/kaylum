@@ -1,11 +1,10 @@
 // sw.js
-// Versión: 1.9 - Buscador y Skins Offline Mejorados
+// Versión: 2.0 - Lógica de Skins Offline y UX de Carga mejoradas
 const SONGS_CACHE_NAME = 'kaylum-songs-cache-v1';
-const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v1.9'; // Incrementamos versión
+const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v2.0'; // Incrementamos versión
 const ALL_CACHES = [SONGS_CACHE_NAME, STATIC_ASSETS_CACHE_NAME];
 const REPO_NAME = 'kaylum';
 
-// Lista de assets fundamentales para que la app funcione offline desde el inicio.
 const PRECACHE_ASSETS = [
     `/${REPO_NAME}/`,
     `/${REPO_NAME}/index.html`,
@@ -17,7 +16,6 @@ const PRECACHE_ASSETS = [
     `/${REPO_NAME}/assets/img/logo03.png`,
     `/${REPO_NAME}/assets/img/labplay/default-cover.jpg`,
     `/${REPO_NAME}/assets/img/labplay/alterplayflux.png`,
-    // Se añade un skin por defecto para que siempre haya uno disponible offline.
     `/${REPO_NAME}/assets/img/labplay/skins/skin03.webm`
 ];
 
@@ -29,7 +27,6 @@ self.addEventListener('install', event => {
         caches.open(STATIC_ASSETS_CACHE_NAME)
             .then(cache => {
                 console.log('SW: Pre-cacheando assets estáticos.');
-                // Usamos { cache: 'reload' } para asegurar que obtenemos la versión más reciente durante la instalación.
                 const assetRequests = PRECACHE_ASSETS.map(url => new Request(url, { cache: 'reload' }));
                 return cache.addAll(assetRequests);
             })
@@ -57,121 +54,102 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
 
-    // Estrategia "Network first, then cache" para el CSV, para tener siempre los datos más frescos.
-    if (url.href.startsWith(GOOGLE_SHEET_URL)) {
+    // Estrategia "Network first, then cache" para el CSV y la lista de skins.
+    // Esto asegura que si hay conexión, se obtienen los datos más frescos.
+    // Si no hay conexión, se usa la versión guardada en caché.
+    if (url.href.startsWith(GOOGLE_SHEET_URL) || url.pathname.endsWith('skins.json')) {
         event.respondWith(
-            fetch(event.request)
-                .then(networkResponse => {
-                    // Si la petición de red tiene éxito, la guardamos en caché y la devolvemos.
-                    return caches.open(STATIC_ASSETS_CACHE_NAME).then(cache => {
-                        cache.put(event.request, networkResponse.clone());
-                        return networkResponse;
-                    });
-                })
-                .catch(() => {
-                    // Si la red falla, intentamos obtenerla del caché.
-                    return caches.match(event.request);
-                })
+            caches.open(STATIC_ASSETS_CACHE_NAME).then(async (cache) => {
+                try {
+                    const networkResponse = await fetch(event.request);
+                    cache.put(event.request, networkResponse.clone());
+                    return networkResponse;
+                } catch (error) {
+                    console.log(`SW: Red falló para ${event.request.url}, sirviendo desde caché.`);
+                    return await cache.match(event.request);
+                }
+            })
         );
         return;
     }
-    
-    // Estrategia "Cache first" para las canciones de Cloudinary y otros assets.
-    // Esto es ideal para canciones y skins ya descargados.
+
+    // Estrategia "Cache first" para todo lo demás (canciones, imágenes, skins individuales, etc.)
     event.respondWith(
         caches.match(event.request).then(cachedResponse => {
-            // Si está en caché, la devolvemos.
-            if (cachedResponse) {
-                return cachedResponse;
-            }
-            // Si no está en caché, la buscamos en la red.
-            return fetch(event.request);
+            return cachedResponse || fetch(event.request);
         })
     );
 });
 
-// Listener de mensajes desde la página principal.
 self.addEventListener('message', event => {
-  if (!event.data) return;
-  const { action, songId, url } = event.data;
-  const clientId = event.source ? event.source.id : undefined;
+    if (!event.data) return;
+    const { action, songId, url } = event.data;
+    const clientId = event.source ? event.source.id : undefined;
 
-  switch (action) {
-    case 'DOWNLOAD_SONG':
-        event.waitUntil(handleDownload(songId, url, clientId));
-        break;
-    case 'GET_DOWNLOADED_SONGS':
-        event.waitUntil(sendDownloadedSongsList(clientId));
-        break;
-    // CAMBIO REALIZADO: Esta es la acción que maneja la descarga de un skin individual.
-    case 'DOWNLOAD_SKIN':
-        console.log(`SW: Recibida petición para descargar skin: ${url}`);
-        event.waitUntil(handleSkinDownload(url, clientId));
-        break;
-  }
+    switch (action) {
+        case 'DOWNLOAD_SONG':
+            event.waitUntil(handleDownload(songId, url, clientId));
+            break;
+        case 'GET_DOWNLOADED_SONGS':
+            event.waitUntil(sendDownloadedSongsList(clientId));
+            break;
+        case 'DOWNLOAD_SKIN':
+            event.waitUntil(handleAssetDownload(url, clientId, 'SKIN_DOWNLOADED', 'SKIN_DOWNLOAD_ERROR'));
+            break;
+        // NUEVO: Acción específica para descargar y cachear el archivo skins.json
+        case 'DOWNLOAD_SKIN_LIST':
+            event.waitUntil(handleAssetDownload(url, clientId, 'SKIN_LIST_DOWNLOADED', 'SKIN_DOWNLOAD_ERROR'));
+            break;
+    }
 });
 
-// Función para descargar y guardar una canción en el caché.
 async function handleDownload(songId, url, clientId) {
-  try {
-    const cache = await caches.open(SONGS_CACHE_NAME);
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Respuesta de red no fue OK: ${response.statusText} (${response.status})`);
+    try {
+        const cache = await caches.open(SONGS_CACHE_NAME);
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Red no OK: ${response.statusText}`);
+        await cache.put(url, response.clone());
+        await sendMessageToClient(clientId, { action: 'SONG_DOWNLOADED', songId: songId });
+    } catch (error) {
+        console.error(`SW: Fallo al descargar canción ${songId}.`, error);
+        await sendMessageToClient(clientId, { action: 'DOWNLOAD_ERROR', songId: songId, error: error.message });
     }
-    await cache.put(url, response.clone());
-    await sendMessageToClient(clientId, { action: 'SONG_DOWNLOADED', songId: songId });
-  } catch (error) {
-    console.error(`SW: Fallo al descargar o cachear la canción ${songId}.`, error);
-    await sendMessageToClient(clientId, { action: 'DOWNLOAD_ERROR', songId: songId, error: error.message });
-  }
 }
 
-// CAMBIO REALIZADO: Función que se encarga de descargar y guardar un skin en el caché de assets.
-async function handleSkinDownload(url, clientId) {
-  try {
-    // Los skins se guardan en el mismo caché que los assets estáticos.
-    const cache = await caches.open(STATIC_ASSETS_CACHE_NAME);
-    // Se añade `?_=` para evitar problemas con el caché del navegador (no del Service Worker).
-    const request = new Request(`${url}?_=${new Date().getTime()}`);
-    const response = await fetch(request);
-    if (!response.ok) {
-      throw new Error(`Respuesta de red no fue OK para la skin: ${url}`);
+// NUEVO: Función genérica para descargar cualquier asset (skin, json) al caché estático.
+async function handleAssetDownload(url, clientId, successAction, errorAction) {
+    try {
+        const cache = await caches.open(STATIC_ASSETS_CACHE_NAME);
+        const request = new Request(url, { cache: 'reload' }); // Forzar la recarga desde la red
+        const response = await fetch(request);
+        if (!response.ok) throw new Error(`Red no OK para asset: ${url}`);
+        await cache.put(url, response.clone());
+        console.log(`SW: Asset cacheado: ${url}`);
+        await sendMessageToClient(clientId, { action: successAction, url: url });
+    } catch (error) {
+        console.error(`SW: Fallo al descargar asset ${url}.`, error);
+        await sendMessageToClient(clientId, { action: errorAction, url: url, error: error.message });
     }
-    // La URL original (sin el timestamp) se usa como clave en el caché.
-    await cache.put(url, response.clone());
-    console.log(`SW: Skin cacheado con éxito: ${url}`);
-    await sendMessageToClient(clientId, { action: 'SKIN_DOWNLOADED', url: url });
-  } catch (error) {
-    console.error(`SW: Fallo al descargar o cachear la skin ${url}.`, error);
-    await sendMessageToClient(clientId, { action: 'SKIN_DOWNLOAD_ERROR', url: url, error: error.message });
-  }
 }
 
 async function sendDownloadedSongsList(clientId) {
     try {
         const cache = await caches.open(SONGS_CACHE_NAME);
         const requests = await cache.keys();
-        const songIds = requests.map(req => {
-            const urlParts = req.url.split('/');
-            return urlParts[urlParts.length - 1];
-        });
+        const songIds = requests.map(req => req.url.split('/').pop());
         await sendMessageToClient(clientId, { action: 'DOWNLOADED_SONGS_LIST', songIds });
     } catch (error) {
-        console.error('SW: Error obteniendo la lista de canciones cacheadas.', error);
+        console.error('SW: Error obteniendo lista de canciones.', error);
     }
 }
 
 async function sendMessageToClient(clientId, message) {
-    if (clientId) {
-        const client = await self.clients.get(clientId);
-        if (client) {
-            client.postMessage(message);
-        }
+    const client = clientId ? await self.clients.get(clientId) : null;
+    if (client) {
+        client.postMessage(message);
     } else {
-        const allClients = await self.clients.matchAll({ type: 'window' });
-        for (const client of allClients) {
-            client.postMessage(message);
-        }
+        self.clients.matchAll({ type: 'window' }).then(allClients => {
+            allClients.forEach(c => c.postMessage(message));
+        });
     }
 }
