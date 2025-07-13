@@ -283,84 +283,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const parseCsvRow = (row) => { const c = []; let d = ''; let e = !1; for (let f = 0; f < row.length; f++) { const g = row[f]; if ('"' === g) e && '"' === row[f + 1] ? (d += '"', f++) : e = !e; else if (',' === g && !e) c.push(d.trim()), d = ''; else d += g } c.push(d.trim()); return c.map(h => h.startsWith('"') && h.endsWith('"') ? h.slice(1, -1) : h) };
     function getDownloadedSongMetadata() { const metadata = localStorage.getItem('kaylum_downloaded_metadata'); return metadata ? JSON.parse(metadata) : {}; }
     function saveDownloadedSongMetadata(songObject) { const allMetadata = getDownloadedSongMetadata(); allMetadata[songObject.publicId] = songObject; localStorage.setItem('kaylum_downloaded_metadata', JSON.stringify(allMetadata));}
-    function removeDownloadedSongMetadata(songId) { const allMetadata = getDownloadedSongMetadata(); delete allMetadata[songId]; localStorage.setItem('kaylum_downloaded_metadata', JSON.stringify(allMetadata)); }
 
     // --- Funciones de Descarga ---
-    // MODIFICADO: Ahora puede descargar o eliminar una canción.
+    // MODIFICADO: Ahora envía también la URL de la carátula al Service Worker.
     function handleDownloadClick(button) {
         const songId = button.dataset.songId;
-        
-        if (!navigator.serviceWorker.controller) {
-            alert("El controlador de la aplicación no está listo. Por favor, recarga la página.");
+        const songUrl = button.dataset.songUrl;
+        const songToDownload = allSongs.find(song => song.publicId === songId);
+
+        if (!songToDownload || !navigator.serviceWorker.controller) {
+            alert("No se pudo iniciar la descarga. Revisa tu conexión o recarga la página.");
             return;
         }
 
-        // Comprobar si la canción ya está descargada
-        if (downloadedSongs.has(songId)) {
-            // Si está descargada, enviar orden de eliminar
-            if (confirm('¿Quieres eliminar esta canción de tus guardados?')) {
-                navigator.serviceWorker.controller.postMessage({ 
-                    action: 'DELETE_SONG', 
-                    songId: songId 
-                });
-            }
-        } else {
-            // Si no está descargada, proceder con la descarga
-            const songToDownload = allSongs.find(song => song.publicId === songId);
-            if (!songToDownload) {
-                alert("No se pudo encontrar la información de la canción para descargar.");
-                return;
-            }
-            
-            updateDownloadButtonStatus(songId, 'downloading');
-            saveDownloadedSongMetadata(songToDownload);
-            
-            const coverUrl = songToDownload.cover || '';
-            navigator.serviceWorker.controller.postMessage({ 
-                action: 'DOWNLOAD_SONG_WITH_COVER',
-                songId: songId, 
-                songUrl: songToDownload.publicUrl,
-                coverUrl: coverUrl
-            });
-        }
+        updateDownloadButtonStatus(songId, 'downloading');
+        saveDownloadedSongMetadata(songToDownload);
+        
+        // Obtenemos la URL de la carátula. Puede estar vacía.
+        const coverUrl = songToDownload.cover || '';
+
+        navigator.serviceWorker.controller.postMessage({ 
+            action: 'DOWNLOAD_SONG_WITH_COVER', // Nueva acción más descriptiva
+            songId: songId, 
+            songUrl: songUrl,
+            coverUrl: coverUrl // Se envía la URL de la carátula
+        });
     }
 
     function updateDownloadButtonStatus(songId, status) {
         document.querySelectorAll(`.download-btn[data-song-id="${songId}"]`).forEach(button => {
             if (!button) return;
-            // Habilitamos el botón para todos los casos excepto 'downloading'
-            button.disabled = (status === 'downloading');
+            button.disabled = false;
             button.classList.remove('downloaded');
-
             switch (status) {
-                case 'downloading':
-                    button.innerHTML = '<span class="spinner"></span>';
-                    button.title = 'Descargando...';
-                    break;
-                case 'downloaded':
-                    button.innerHTML = '<i class="bi bi-trash-fill"></i>'; // Icono para eliminar
-                    button.classList.add('downloaded');
-                    button.title = 'Eliminar canción guardada';
-                    break;
-                case 'error':
-                    button.innerHTML = '<i class="bi bi-exclamation-circle"></i>';
-                    button.title = 'Error en la descarga';
-                    break;
-                default: // 'not-downloaded'
-                    button.innerHTML = '<i class="bi bi-cloud-arrow-down"></i>';
-                    button.title = 'Descargar para escuchar sin conexión';
-                    break;
+                case 'downloading': button.innerHTML = '<span class="spinner"></span>'; button.disabled = true; break;
+                case 'downloaded': button.innerHTML = '<i class="bi bi-cloud-check-fill"></i>'; button.classList.add('downloaded'); button.title = 'Descargado'; button.disabled = true; break;
+                default: button.innerHTML = '<i class="bi bi-cloud-arrow-down"></i>'; button.title = 'Descargar para escuchar sin conexión'; break;
             }
         });
     }
     function updateAllDownloadButtons() {
         document.querySelectorAll('.download-btn').forEach(button => {
             const songId = button.dataset.songId;
-            if (downloadedSongs.has(songId)) { 
-                updateDownloadButtonStatus(songId, 'downloaded'); 
-            } else { 
-                updateDownloadButtonStatus(songId, 'not-downloaded'); 
-            }
+            if (downloadedSongs.has(songId)) { updateDownloadButtonStatus(songId, 'downloaded'); } 
+            else { updateDownloadButtonStatus(songId, 'not-downloaded'); }
         });
     }
     async function handleDownloadSkinsClick() {
@@ -424,30 +390,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     downloadedSongs = new Set(songIds);
                     if (downloadedSongs.size > 0) { playlistsData['Guardados'] = []; }
                     if (allSongs.length > 0) { renderCategoryTabs(); }
-                    break;
-                // AÑADIDO: Manejar la confirmación de eliminación
-                case 'SONG_DELETED':
-                    downloadedSongs.delete(songId);
-                    removeDownloadedSongMetadata(songId);
-                    updateDownloadButtonStatus(songId, 'not-downloaded');
-                    
-                    // Si el usuario está viendo "Guardados", actualizar la lista
-                    if (currentCategory === 'Guardados') {
-                        currentPlaylist = allSongs.filter(song => downloadedSongs.has(song.publicId));
-                        updatePaginatedView();
-                    }
-
-                    // Si ya no quedan canciones guardadas, eliminar la pestaña
-                    if (downloadedSongs.size === 0 && playlistsData['Guardados']) {
-                        delete playlistsData['Guardados'];
-                        // Si estábamos en "Guardados", cambiar a otra categoría
-                        if (currentCategory === 'Guardados') {
-                            const firstCategory = Object.keys(playlistsData).find(k => k !== 'Favoritos');
-                            loadCategory(firstCategory || '');
-                        } else {
-                            renderCategoryTabs();
-                        }
-                    }
                     break;
             }
         });
@@ -516,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
             playlistViewContainer.innerHTML = `<p style="text-align:center; padding: 20px 0; color:var(--secondary-text-color);">${message}</p>`;
             return;
         }
-        playlistViewContainer.innerHTML = `<ol>${playlistToRender.map(song => `<li data-global-index="${allSongs.findIndex(s => s.publicId === song.publicId)}"><i class="bi bi-music-note-beamed icon"></i><div class="track-details"><div class="title">${song.title}</div><div class="artist">${song.artist}</div></div><button class="download-btn" data-song-id="${song.publicId}"><i class="bi bi-cloud-arrow-down"></i></button></li>`).join('')}</ol>`;
+        playlistViewContainer.innerHTML = `<ol>${playlistToRender.map(song => `<li data-global-index="${allSongs.findIndex(s => s.publicId === song.publicId)}"><i class="bi bi-music-note-beamed icon"></i><div class="track-details"><div class="title">${song.title}</div><div class="artist">${song.artist}</div></div><button class="download-btn" data-song-id="${song.publicId}" data-song-url="${song.publicUrl}"><i class="bi bi-cloud-arrow-down"></i></button></li>`).join('')}</ol>`;
         updatePlaylistHighlight();
         updateAllDownloadButtons();
     }
