@@ -1,7 +1,7 @@
 // sw.js
-// Versión: 2.2 - Añadida funcionalidad para borrar canciones cacheadas
+// Versión: 2.3 - Corregido el borrado de caché usando objetos Request explícitos.
 const SONGS_CACHE_NAME = 'kaylum-songs-cache-v1';
-const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v2.2'; // Incrementamos versión
+const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v2.3'; // Incrementamos versión
 const ALL_CACHES = [SONGS_CACHE_NAME, STATIC_ASSETS_CACHE_NAME];
 const REPO_NAME = 'kaylum';
 
@@ -86,7 +86,6 @@ self.addEventListener('message', event => {
         case 'DOWNLOAD_SONG_WITH_COVER':
             event.waitUntil(handleSongAndCoverDownload(songId, songUrl, coverUrl, clientId));
             break;
-        // CORREGIDO: Nueva acción para borrar una canción.
         case 'DELETE_SONG':
             event.waitUntil(handleSongDeletion(songId, songUrl, coverUrl, clientId));
             break;
@@ -94,29 +93,30 @@ self.addEventListener('message', event => {
             event.waitUntil(sendDownloadedSongsList(clientId));
             break;
         case 'DOWNLOAD_SKIN':
-            event.waitUntil(handleAssetDownload(event.data.url, clientId, 'SKIN_DOWNLOADED', 'SKIN_DOWNLOAD_ERROR'));
-            break;
         case 'DOWNLOAD_SKIN_LIST':
-            event.waitUntil(handleAssetDownload(event.data.url, clientId, 'SKIN_LIST_DOWNLOADED', 'SKIN_DOWNLOAD_ERROR'));
+             event.waitUntil(handleAssetDownload(event.data.url, clientId, action.replace('DOWNLOAD', 'DOWNLOADED').replace('_LIST', '_LIST_DOWNLOADED'), 'SKIN_DOWNLOAD_ERROR'));
             break;
     }
 });
 
-// NUEVO: Función que elimina una canción y su carátula del caché.
+// CORREGIDO: Función de borrado usando objetos Request para asegurar la coincidencia de claves.
 async function handleSongDeletion(songId, songUrl, coverUrl, clientId) {
     try {
         const songCache = await caches.open(SONGS_CACHE_NAME);
-        const songDeleted = await songCache.delete(songUrl);
+        const songRequest = new Request(songUrl); // Crear el objeto Request explícito
+        const songDeleted = await songCache.delete(songRequest);
 
         if (coverUrl && coverUrl.startsWith('http')) {
             const staticCache = await caches.open(STATIC_ASSETS_CACHE_NAME);
-            await staticCache.delete(coverUrl);
+            const coverRequest = new Request(coverUrl, { mode: 'no-cors' }); // Debe coincidir con el Request de la descarga
+            await staticCache.delete(coverRequest);
         }
 
         if (songDeleted) {
-            console.log(`SW: Canción ${songId} eliminada del caché.`);
+            console.log(`SW: Canción ${songId} eliminada del caché correctamente.`);
             await sendMessageToClient(clientId, { action: 'SONG_DELETED', songId: songId });
         } else {
+             // Este error ahora sí será certero.
              throw new Error(`La canción ${songId} no se encontró en el caché para ser eliminada.`);
         }
     } catch (error) {
@@ -125,29 +125,29 @@ async function handleSongDeletion(songId, songUrl, coverUrl, clientId) {
     }
 }
 
-
+// CORREGIDO: Función de descarga usando objetos Request para guardar en caché.
 async function handleSongAndCoverDownload(songId, songUrl, coverUrl, clientId) {
     try {
         const downloadPromises = [];
         
         const songPromise = caches.open(SONGS_CACHE_NAME).then(async (cache) => {
-            const response = await fetch(songUrl);
+            const songRequest = new Request(songUrl); // Crear el objeto Request explícito
+            const response = await fetch(songRequest);
             if (!response.ok) throw new Error(`Red no OK para canción: ${songUrl}`);
-            return cache.put(songUrl, response);
+            return cache.put(songRequest, response); // Usar el Request como clave
         });
         downloadPromises.push(songPromise);
 
         if (coverUrl && coverUrl.startsWith('http')) {
             const coverPromise = caches.open(STATIC_ASSETS_CACHE_NAME).then(async (cache) => {
-                const request = new Request(coverUrl, { mode: 'no-cors' });
-                const response = await fetch(request);
-                return cache.put(coverUrl, response);
+                const coverRequest = new Request(coverUrl, { mode: 'no-cors' }); // Crear el Request
+                const response = await fetch(coverRequest);
+                return cache.put(coverRequest, response); // Usar el Request como clave
             });
             downloadPromises.push(coverPromise);
         }
 
         await Promise.all(downloadPromises);
-
         console.log(`SW: Canción y carátula para ${songId} descargadas.`);
         await sendMessageToClient(clientId, { action: 'SONG_DOWNLOADED', songId: songId });
 
@@ -157,13 +157,14 @@ async function handleSongAndCoverDownload(songId, songUrl, coverUrl, clientId) {
     }
 }
 
+
 async function handleAssetDownload(url, clientId, successAction, errorAction) {
     try {
         const cache = await caches.open(STATIC_ASSETS_CACHE_NAME);
         const request = new Request(url, { cache: 'reload' });
         const response = await fetch(request);
         if (!response.ok) throw new Error(`Red no OK para asset: ${url}`);
-        await cache.put(url, response.clone());
+        await cache.put(request, response.clone());
         console.log(`SW: Asset cacheado: ${url}`);
         await sendMessageToClient(clientId, { action: successAction, url: url });
     } catch (error) {
@@ -176,6 +177,7 @@ async function sendDownloadedSongsList(clientId) {
     try {
         const cache = await caches.open(SONGS_CACHE_NAME);
         const requests = await cache.keys();
+        // CORREGIDO: Extraer el ID de la canción de la URL del objeto Request
         const songIds = requests.map(req => req.url.split('/').pop());
         await sendMessageToClient(clientId, { action: 'DOWNLOADED_SONGS_LIST', songIds });
     } catch (error) {
