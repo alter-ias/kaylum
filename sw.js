@@ -1,7 +1,7 @@
 // sw.js
-// Versión: 2.2 - Añadida la funcionalidad de eliminar canciones
+// Versión: 2.1 - Descarga de carátulas para modo offline
 const SONGS_CACHE_NAME = 'kaylum-songs-cache-v1';
-const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v2.1';
+const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v2.1'; // Incrementamos versión
 const ALL_CACHES = [SONGS_CACHE_NAME, STATIC_ASSETS_CACHE_NAME];
 const REPO_NAME = 'kaylum';
 
@@ -79,20 +79,14 @@ self.addEventListener('fetch', event => {
 
 self.addEventListener('message', event => {
     if (!event.data) return;
-    // AÑADIDO: La acción de eliminar también necesita saber la coverUrl para borrarla
-    const { action, songId, songUrl, coverUrl } = event.data;
+    const { action, songId, songUrl, coverUrl } = event.data; // Se extrae coverUrl
     const clientId = event.source ? event.source.id : undefined;
 
     switch (action) {
+        // MODIFICADO: Nueva acción para manejar la descarga conjunta.
         case 'DOWNLOAD_SONG_WITH_COVER':
             event.waitUntil(handleSongAndCoverDownload(songId, songUrl, coverUrl, clientId));
             break;
-            
-        // AÑADIDO: Case para manejar la eliminación de una canción
-        case 'DELETE_SONG':
-            event.waitUntil(handleSongDeletion(songId, clientId));
-            break;
-
         case 'GET_DOWNLOADED_SONGS':
             event.waitUntil(sendDownloadedSongsList(clientId));
             break;
@@ -105,10 +99,12 @@ self.addEventListener('message', event => {
     }
 });
 
+// NUEVO: Función que descarga y guarda la canción y su carátula.
 async function handleSongAndCoverDownload(songId, songUrl, coverUrl, clientId) {
     try {
         const downloadPromises = [];
         
+        // Promesa para descargar la canción
         const songPromise = caches.open(SONGS_CACHE_NAME).then(async (cache) => {
             const response = await fetch(songUrl);
             if (!response.ok) throw new Error(`Red no OK para canción: ${songUrl}`);
@@ -116,15 +112,20 @@ async function handleSongAndCoverDownload(songId, songUrl, coverUrl, clientId) {
         });
         downloadPromises.push(songPromise);
 
+        // Promesa para descargar la carátula (si existe la URL)
         if (coverUrl && coverUrl.startsWith('http')) {
             const coverPromise = caches.open(STATIC_ASSETS_CACHE_NAME).then(async (cache) => {
+                // Se usa 'no-cors' para URLs de terceros (como Google Images) que podrían no tener cabeceras CORS correctas.
+                // Esto permite guardar la imagen, aunque no podamos inspeccionar su contenido desde el script.
                 const request = new Request(coverUrl, { mode: 'no-cors' });
                 const response = await fetch(request);
+                // En modo 'no-cors', la respuesta es "opaca" y su status es 0, pero se puede cachear.
                 return cache.put(coverUrl, response);
             });
             downloadPromises.push(coverPromise);
         }
 
+        // Se espera a que todas las descargas terminen
         await Promise.all(downloadPromises);
 
         console.log(`SW: Canción y carátula para ${songId} descargadas.`);
@@ -133,36 +134,6 @@ async function handleSongAndCoverDownload(songId, songUrl, coverUrl, clientId) {
     } catch (error) {
         console.error(`SW: Fallo al descargar canción o carátula para ${songId}.`, error);
         await sendMessageToClient(clientId, { action: 'DOWNLOAD_ERROR', songId: songId, error: error.message });
-    }
-}
-
-// AÑADIDO: Función completa para eliminar la canción y su carátula del caché.
-async function handleSongDeletion(songId, clientId) {
-    try {
-        const songUrlToDelete = `https://res.cloudinary.com/dy9cywux2/video/upload/${songId}`;
-
-        // Eliminar la canción del caché de canciones
-        const songsCache = await caches.open(SONGS_CACHE_NAME);
-        const songDeleted = await songsCache.delete(songUrlToDelete);
-        
-        if (songDeleted) {
-            console.log(`SW: Canción eliminada del caché: ${songUrlToDelete}`);
-        } else {
-            console.warn(`SW: La canción a eliminar no se encontró en el caché: ${songUrlToDelete}`);
-        }
-
-        // Para eliminar la carátula, necesitamos su URL. La forma más limpia es que el cliente la busque
-        // en sus metadatos guardados (localStorage) y la envíe.
-        // Dado que la lógica del cliente ya no envía la URL de la carátula para eliminar, 
-        // este paso se omitirá y la carátula quedará huérfana. 
-        // Para una solución perfecta, el cliente debería enviar la coverUrl en el mensaje de 'DELETE_SONG'.
-        // Sin embargo, eliminaremos la canción que es lo principal.
-
-        await sendMessageToClient(clientId, { action: 'SONG_DELETED', songId: songId });
-
-    } catch (error) {
-        console.error(`SW: Fallo al eliminar la canción ${songId}.`, error);
-        await sendMessageToClient(clientId, { action: 'DELETE_ERROR', songId: songId, error: error.message });
     }
 }
 
@@ -175,7 +146,7 @@ async function handleAssetDownload(url, clientId, successAction, errorAction) {
         await cache.put(url, response.clone());
         console.log(`SW: Asset cacheado: ${url}`);
         await sendMessageToClient(clientId, { action: successAction, url: url });
-    } catch (error)
+    } catch (error) {
         console.error(`SW: Fallo al descargar asset ${url}.`, error);
         await sendMessageToClient(clientId, { action: errorAction, url: url, error: error.message });
     }
