@@ -1,7 +1,7 @@
 // sw.js
-// Versión: 2.1 - Descarga de carátulas para modo offline
+// Versión: 2.2 - Añadida funcionalidad para borrar canciones cacheadas
 const SONGS_CACHE_NAME = 'kaylum-songs-cache-v1';
-const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v2.1'; // Incrementamos versión
+const STATIC_ASSETS_CACHE_NAME = 'kaylum-static-assets-v2.2'; // Incrementamos versión
 const ALL_CACHES = [SONGS_CACHE_NAME, STATIC_ASSETS_CACHE_NAME];
 const REPO_NAME = 'kaylum';
 
@@ -79,13 +79,16 @@ self.addEventListener('fetch', event => {
 
 self.addEventListener('message', event => {
     if (!event.data) return;
-    const { action, songId, songUrl, coverUrl } = event.data; // Se extrae coverUrl
+    const { action, songId, songUrl, coverUrl } = event.data;
     const clientId = event.source ? event.source.id : undefined;
 
     switch (action) {
-        // MODIFICADO: Nueva acción para manejar la descarga conjunta.
         case 'DOWNLOAD_SONG_WITH_COVER':
             event.waitUntil(handleSongAndCoverDownload(songId, songUrl, coverUrl, clientId));
+            break;
+        // CORREGIDO: Nueva acción para borrar una canción.
+        case 'DELETE_SONG':
+            event.waitUntil(handleSongDeletion(songId, songUrl, coverUrl, clientId));
             break;
         case 'GET_DOWNLOADED_SONGS':
             event.waitUntil(sendDownloadedSongsList(clientId));
@@ -99,12 +102,34 @@ self.addEventListener('message', event => {
     }
 });
 
-// NUEVO: Función que descarga y guarda la canción y su carátula.
+// NUEVO: Función que elimina una canción y su carátula del caché.
+async function handleSongDeletion(songId, songUrl, coverUrl, clientId) {
+    try {
+        const songCache = await caches.open(SONGS_CACHE_NAME);
+        const songDeleted = await songCache.delete(songUrl);
+
+        if (coverUrl && coverUrl.startsWith('http')) {
+            const staticCache = await caches.open(STATIC_ASSETS_CACHE_NAME);
+            await staticCache.delete(coverUrl);
+        }
+
+        if (songDeleted) {
+            console.log(`SW: Canción ${songId} eliminada del caché.`);
+            await sendMessageToClient(clientId, { action: 'SONG_DELETED', songId: songId });
+        } else {
+             throw new Error(`La canción ${songId} no se encontró en el caché para ser eliminada.`);
+        }
+    } catch (error) {
+        console.error(`SW: Fallo al eliminar la canción ${songId}.`, error);
+        await sendMessageToClient(clientId, { action: 'DOWNLOAD_ERROR', songId: songId, error: error.message });
+    }
+}
+
+
 async function handleSongAndCoverDownload(songId, songUrl, coverUrl, clientId) {
     try {
         const downloadPromises = [];
         
-        // Promesa para descargar la canción
         const songPromise = caches.open(SONGS_CACHE_NAME).then(async (cache) => {
             const response = await fetch(songUrl);
             if (!response.ok) throw new Error(`Red no OK para canción: ${songUrl}`);
@@ -112,20 +137,15 @@ async function handleSongAndCoverDownload(songId, songUrl, coverUrl, clientId) {
         });
         downloadPromises.push(songPromise);
 
-        // Promesa para descargar la carátula (si existe la URL)
         if (coverUrl && coverUrl.startsWith('http')) {
             const coverPromise = caches.open(STATIC_ASSETS_CACHE_NAME).then(async (cache) => {
-                // Se usa 'no-cors' para URLs de terceros (como Google Images) que podrían no tener cabeceras CORS correctas.
-                // Esto permite guardar la imagen, aunque no podamos inspeccionar su contenido desde el script.
                 const request = new Request(coverUrl, { mode: 'no-cors' });
                 const response = await fetch(request);
-                // En modo 'no-cors', la respuesta es "opaca" y su status es 0, pero se puede cachear.
                 return cache.put(coverUrl, response);
             });
             downloadPromises.push(coverPromise);
         }
 
-        // Se espera a que todas las descargas terminen
         await Promise.all(downloadPromises);
 
         console.log(`SW: Canción y carátula para ${songId} descargadas.`);
