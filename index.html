@@ -111,8 +111,6 @@
         .page-footer { padding: 20px 0 40px; text-align: center; }
         #add-to-home-btn { display: none; background-color: transparent; border: 1px solid var(--player-border-color); color: var(--text-color); font-family: 'Montserrat', sans-serif; font-weight: 500; font-size: 1rem; padding: 10px 20px; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; align-items: center; gap: 10px; }
         #add-to-home-btn:hover { background-color: rgba(255, 255, 255, 0.1); border-color: var(--text-color); }
-        
-        /* INICIO DE NUEVO CSS */
         .playlist-actions { display: flex; align-items: center; gap: 15px; margin-left: auto; flex-shrink: 0; }
         .playlist-fav-btn, .playlist-view li .download-btn {
             background: none;
@@ -134,8 +132,6 @@
             cursor: not-allowed;
             opacity: 0.8;
         }
-        /* FIN DE NUEVO CSS */
-
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .spinner {
             display: inline-block;
@@ -169,13 +165,11 @@
                     <div class="album-art-container">
                         <img src="assets/img/labplay/default-cover.jpg" alt="Carátula del Álbum" id="album-art">
                     </div>
-                    <!-- INICIO DE CORRECCIÓN HTML -->
                     <div class="track-info">
                         <button id="player-download-btn" title="Descargar"><i class="bi bi-cloud-arrow-down"></i></button>
                         <h2 id="song-title">Selecciona una canción</h2>
                         <button id="add-to-favorites-btn" title="Añadir a Favoritos"><i class="bi bi-heart"></i></button>
                     </div>
-                    <!-- FIN DE CORRECCIÓN HTML -->
                     <p id="song-artist">para comenzar</p>
                     <div class="player-controls">
                         <button id="shuffle-btn" title="Aleatorio"><i class="bi bi-shuffle"></i></button>
@@ -268,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const shareBtn = document.getElementById('share-btn');
     const addToFavoritesBtn = document.getElementById('add-to-favorites-btn');
     const downloadSkinsBtn = document.getElementById('download-skins-btn');
-    const playerDownloadBtn = document.getElementById('player-download-btn'); // NUEVA VARIABLE
+    const playerDownloadBtn = document.getElementById('player-download-btn');
 
     let deferredInstallPrompt = null;
     const cloudinaryBaseUrl = 'https://res.cloudinary.com/dy9cywux2/video/upload/';
@@ -278,8 +272,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const songsPerPage = 5;
     let playlistsData = {};
     let currentCategory = '';
-    let currentPlaylist = []; // La lista que el reproductor está usando internamente
-    let displayedPlaylist = []; // La lista que se muestra visualmente
+    let currentPlaylist = [];
+    let displayedPlaylist = [];
     let allSongs = [];
     let currentSongIndex = -1;
     let fuse;
@@ -290,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isRepeatActive = false;
     let userFavorites = [];
     let downloadedSongs = new Set();
-    let nextPlaylistInfo = null; // Almacena la próxima lista a reproducir tras un cambio
+    let nextPlaylistInfo = null;
 
     // 2. DEFINICIÓN DE TODAS LAS FUNCIONES
     const shuffleArray = (array) => { let newArr = [...array]; for (let i = newArr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[newArr[i], newArr[j]] = [newArr[j], newArr[i]]; } return newArr; };
@@ -298,26 +292,58 @@ document.addEventListener('DOMContentLoaded', () => {
     function getDownloadedSongMetadata() { const metadata = localStorage.getItem('kaylum_downloaded_metadata'); return metadata ? JSON.parse(metadata) : {}; }
     function saveDownloadedSongMetadata(songObject) { const allMetadata = getDownloadedSongMetadata(); allMetadata[songObject.publicId] = songObject; localStorage.setItem('kaylum_downloaded_metadata', JSON.stringify(allMetadata));}
 
-    // --- Funciones de Descarga y Borrado ---
-    function triggerDownloadProcess(songId) { const songToProcess = allSongs.find(song => song.publicId === songId); if (!songToProcess || !navigator.serviceWorker.controller) { alert("No se pudo iniciar la operación. Revisa tu conexión o recarga la página."); return; } if (downloadedSongs.has(songId)) { updateDownloadButtonStatus(songId, 'deleting'); navigator.serviceWorker.controller.postMessage({ action: 'DELETE_SONG', songId: songId }); } else { updateDownloadButtonStatus(songId, 'downloading'); saveDownloadedSongMetadata(songToProcess); navigator.serviceWorker.controller.postMessage({ action: 'DOWNLOAD_SONG_WITH_COVER', songId: songId, songUrl: songToProcess.publicUrl, coverUrl: songToProcess.cover || '' }); } }
-    function updateDownloadButtonStatus(songId, status) {
-        if (currentSongIndex > -1 && currentPlaylist[currentSongIndex]?.publicId === songId) { updatePlayerButton(playerDownloadBtn, status, '<i class="bi bi-cloud-fill"></i>', '<i class="bi bi-cloud-arrow-down"></i>', 'Eliminar del dispositivo', 'Descargar'); }
-        document.querySelectorAll(`.download-btn[data-song-id="${songId}"]`).forEach(button => { updatePlayerButton(button, status, '<i class="bi bi-cloud-fill"></i>', '<i class="bi bi-cloud-arrow-down"></i>', 'Eliminar del dispositivo', 'Descargar'); });
+    // --- Funciones de Descarga y Favoritos (Lógica Centralizada) ---
+    function updatePlayerButton(button, status, activeIcon, inactiveIcon, activeTitle, inactiveTitle) {
+        if (!button) return;
+        button.disabled = false;
+        const targetClass = status === 'is-favorite' || status === 'downloaded' ? status : '';
+        button.className = button.className.replace(/is-favorite|downloaded/g, '').trim();
+        if(targetClass) button.classList.add(targetClass);
+
+        switch (status) {
+            case 'downloading': case 'deleting': button.innerHTML = '<span class="spinner"></span>'; button.disabled = true; break;
+            case 'downloaded': case 'is-favorite': button.innerHTML = activeIcon; button.title = activeTitle; break;
+            case 'error': button.innerHTML = '<i class="bi bi-x-circle"></i>'; button.title = 'Error en la operación'; break;
+            default: button.innerHTML = inactiveIcon; button.title = inactiveTitle; break;
+        }
     }
-    function updatePlayerButton(button, status, activeIcon, inactiveIcon, activeTitle, inactiveTitle) { if (!button) return; button.disabled = false; button.classList.remove('downloaded', 'is-favorite'); switch (status) { case 'downloading': case 'deleting': button.innerHTML = '<span class="spinner"></span>'; button.disabled = true; break; case 'downloaded': case 'is-favorite': button.innerHTML = activeIcon; button.classList.add(status); button.title = activeTitle; button.disabled = false; break; case 'error': button.innerHTML = '<i class="bi bi-x-circle"></i>'; button.title = 'Error en la operación'; break; default: button.innerHTML = inactiveIcon; button.title = inactiveTitle; break; } }
-    
-    // --- Lógica de Favoritos ---
+
+    function triggerDownloadProcess(songId) {
+        const songToProcess = allSongs.find(song => song.publicId === songId);
+        if (!songToProcess || !navigator.serviceWorker.controller) { alert("No se pudo iniciar la operación."); return; }
+        if (downloadedSongs.has(songId)) {
+            updateDownloadButtonStatus(songId, 'deleting');
+            navigator.serviceWorker.controller.postMessage({ action: 'DELETE_SONG', songId: songId });
+        } else {
+            updateDownloadButtonStatus(songId, 'downloading');
+            saveDownloadedSongMetadata(songToProcess);
+            navigator.serviceWorker.controller.postMessage({ action: 'DOWNLOAD_SONG_WITH_COVER', songId: songId, songUrl: songToProcess.publicUrl, coverUrl: songToProcess.cover || '' });
+        }
+    }
+
+    function updateDownloadButtonStatus(songId, status) {
+        const icons = { active: '<i class="bi bi-cloud-fill"></i>', inactive: '<i class="bi bi-cloud-arrow-down"></i>' };
+        const titles = { active: 'Eliminar del dispositivo', inactive: 'Descargar' };
+        if (currentSongIndex > -1 && currentPlaylist[currentSongIndex]?.publicId === songId) {
+            updatePlayerButton(playerDownloadBtn, status, icons.active, icons.inactive, titles.active, titles.inactive);
+        }
+        document.querySelectorAll(`.download-btn[data-song-id="${songId}"]`).forEach(button => {
+            updatePlayerButton(button, status, icons.active, icons.inactive, titles.active, titles.inactive);
+        });
+    }
+
     function toggleFavorite(songId) {
         if (!songId) return;
         const favIndex = userFavorites.indexOf(songId);
-        if (favIndex > -1) { userFavorites.splice(favIndex, 1); } else { userFavorites.push(songId); }
+        if (favIndex > -1) userFavorites.splice(favIndex, 1); else userFavorites.push(songId);
         localStorage.setItem('kaylum_favorites', JSON.stringify(userFavorites));
         updateFavoriteStatus(songId);
+
         const hadFavorites = Object.keys(playlistsData).includes('Favoritos');
-        if (userFavorites.length > 0 && !hadFavorites) { playlistsData['Favoritos'] = []; renderCategoryTabs(); } 
+        if (userFavorites.length > 0 && !hadFavorites) { playlistsData['Favoritos'] = []; renderCategoryTabs(); }
         else if (userFavorites.length === 0 && hadFavorites) {
             delete playlistsData['Favoritos'];
-            if (currentCategory === 'Favoritos') loadCategory(Object.keys(playlistsData).find(k => k !== 'Favoritos' && !k.startsWith('Artista:')) || 'Guardados');
+            if (currentCategory === 'Favoritos') loadCategory(Object.keys(playlistsData).find(k => k !== 'Favoritos') || 'Guardados');
             else renderCategoryTabs();
         }
         if (currentCategory === 'Favoritos') {
@@ -325,28 +351,63 @@ document.addEventListener('DOMContentLoaded', () => {
             handlePlaylistUpdate(isShuffleActive ? shuffleArray(newList) : newList);
         }
     }
+
     function updateFavoriteStatus(songId) {
         const isFavorite = userFavorites.includes(songId);
         const status = isFavorite ? 'is-favorite' : 'not-favorite';
-        if (currentSongIndex > -1 && currentPlaylist[currentSongIndex]?.publicId === songId) { updatePlayerButton(addToFavoritesBtn, status, '<i class="bi bi-heart-fill"></i>', '<i class="bi bi-heart"></i>', 'Quitar de Favoritos', 'Añadir a Favoritos'); }
-        document.querySelectorAll(`.playlist-fav-btn[data-song-id="${songId}"]`).forEach(button => { updatePlayerButton(button, status, '<i class="bi bi-heart-fill"></i>', '<i class="bi bi-heart"></i>', 'Quitar de Favoritos', 'Añadir a Favoritos'); });
+        const icons = { active: '<i class="bi bi-heart-fill"></i>', inactive: '<i class="bi bi-heart"></i>' };
+        const titles = { active: 'Quitar de Favoritos', inactive: 'Añadir a Favoritos' };
+        if (currentSongIndex > -1 && currentPlaylist[currentSongIndex]?.publicId === songId) {
+            updatePlayerButton(addToFavoritesBtn, status, icons.active, icons.inactive, titles.active, titles.inactive);
+        }
+        document.querySelectorAll(`.playlist-fav-btn[data-song-id="${songId}"]`).forEach(button => {
+            updatePlayerButton(button, status, icons.active, icons.inactive, titles.active, titles.inactive);
+        });
     }
 
     // --- PWA y Service Worker ---
-    function setupServiceWorker() { if (!('serviceWorker' in navigator)) return; window.addEventListener('load', () => { navigator.serviceWorker.register('/kaylum/sw.js', { scope: '/kaylum/' }).then(registration => { console.log('Service Worker registrado con éxito:', registration.scope); navigator.serviceWorker.ready.then(readyReg => { if (readyReg.active) { readyReg.active.postMessage({ action: 'GET_DOWNLOADED_SONGS' }); } }); }).catch(err => { console.error('Fallo en el registro del SW:', err); }); }); navigator.serviceWorker.addEventListener('message', event => { if (!event.data) return; const { action, songId, songIds } = event.data; switch(action) { case 'SONG_DOWNLOADED': downloadedSongs.add(songId); updateDownloadButtonStatus(songId, 'downloaded'); if (downloadedSongs.size === 1 && !playlistsData['Guardados']) { playlistsData['Guardados'] = []; renderCategoryTabs(); } break; case 'SONG_DELETED': downloadedSongs.delete(songId); updateDownloadButtonStatus(songId, 'not-downloaded'); if (currentCategory === 'Guardados') { const newList = getPlaylistForCategory('Guardados'); handlePlaylistUpdate(isShuffleActive ? shuffleArray(newList) : newList); } if (downloadedSongs.size === 0) { delete playlistsData['Guardados']; renderCategoryTabs(); } break; case 'DOWNLOAD_ERROR': updateDownloadButtonStatus(songId, 'error'); alert(`No se pudo procesar la canción.`); break; case 'DOWNLOADED_SONGS_LIST': downloadedSongs = new Set(songIds); if (downloadedSongs.size > 0) playlistsData['Guardados'] = []; if (allSongs.length > 0) renderCategoryTabs(); break; } }); }
-    function setupPWAInstall() { window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstallPrompt = e; if (addToHomeBtn) { addToHomeBtn.style.display = 'inline-flex'; } }); if(addToHomeBtn) { addToHomeBtn.addEventListener('click', async () => { if (!deferredInstallPrompt) return; deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice; deferredInstallPrompt = null; addToHomeBtn.style.display = 'none'; }); } }
+    function setupServiceWorker() {
+        if (!('serviceWorker' in navigator)) return;
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/kaylum/sw.js', { scope: '/kaylum/' }).then(registration => {
+                navigator.serviceWorker.ready.then(readyReg => { if (readyReg.active) readyReg.active.postMessage({ action: 'GET_DOWNLOADED_SONGS' }); });
+            }).catch(err => console.error('Fallo en el registro del SW:', err));
+        });
+        navigator.serviceWorker.addEventListener('message', event => {
+            if (!event.data) return;
+            const { action, songId, songIds } = event.data;
+            switch(action) {
+                case 'SONG_DOWNLOADED':
+                    downloadedSongs.add(songId);
+                    updateDownloadButtonStatus(songId, 'downloaded');
+                    if (downloadedSongs.size === 1 && !playlistsData['Guardados']) { playlistsData['Guardados'] = []; renderCategoryTabs(); }
+                    break;
+                case 'SONG_DELETED':
+                    downloadedSongs.delete(songId);
+                    updateDownloadButtonStatus(songId, 'not-downloaded');
+                    if (currentCategory === 'Guardados') {
+                        const newList = getPlaylistForCategory('Guardados');
+                        handlePlaylistUpdate(isShuffleActive ? shuffleArray(newList) : newList);
+                    }
+                    if (downloadedSongs.size === 0) { delete playlistsData['Guardados']; renderCategoryTabs(); }
+                    break;
+                case 'DOWNLOAD_ERROR': updateDownloadButtonStatus(songId, 'error'); break;
+                case 'DOWNLOADED_SONGS_LIST': downloadedSongs = new Set(songIds); if (downloadedSongs.size > 0 && allSongs.length > 0) { playlistsData['Guardados'] = []; renderCategoryTabs(); } break;
+            }
+        });
+    }
+    function setupPWAInstall() { window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstallPrompt = e; if (addToHomeBtn) addToHomeBtn.style.display = 'inline-flex'; }); if(addToHomeBtn) { addToHomeBtn.addEventListener('click', async () => { if (!deferredInstallPrompt) return; deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice; deferredInstallPrompt = null; addToHomeBtn.style.display = 'none'; }); } }
     
-    // --- Lógica del reproductor y UI ---
+    // --- Lógica del reproductor y Playlist ---
     function loadSong(playlistIndex) {
-        if (playlistIndex < 0 || playlistIndex >= currentPlaylist.length) {
-            if (currentPlaylist.length > 0) loadSong(0); // Reiniciar si el índice es inválido
-            return;
-        }
+        if (playlistIndex < 0 || playlistIndex >= currentPlaylist.length) { if (currentPlaylist.length > 0) loadSong(0); return; }
         currentSongIndex = playlistIndex;
         const song = currentPlaylist[currentSongIndex];
-        songTitleEl.textContent = song.title; songArtistEl.textContent = song.artist; albumArtEl.src = (song.cover && song.cover.trim() !== '') ? song.cover : defaultCover; songInformationEl.classList.remove('is-open');
-        if (song.information && song.information.trim() !== '') { songInformationEl.textContent = song.information; songInfoToggleBtn.style.display = 'block'; } else { songInfoToggleBtn.style.display = 'none'; }
-        updatePlaylistHighlight(); updateFavoriteStatus(song.publicId); updateDownloadButtonStatus(song.publicId, downloadedSongs.has(song.publicId) ? 'downloaded' : 'not-downloaded'); audioPlayer.src = song.publicUrl; audioPlayer.play().catch(e => {});
+        songTitleEl.textContent = song.title; songArtistEl.textContent = song.artist; albumArtEl.src = song.cover?.trim() || defaultCover;
+        songInformationEl.classList.remove('is-open');
+        if (song.information?.trim()) { songInformationEl.textContent = song.information; songInfoToggleBtn.style.display = 'block'; } else { songInfoToggleBtn.style.display = 'none'; }
+        updatePlaylistHighlight(); updateFavoriteStatus(song.publicId); updateDownloadButtonStatus(song.publicId, downloadedSongs.has(song.publicId) ? 'downloaded' : 'not-downloaded');
+        audioPlayer.src = song.publicUrl; audioPlayer.play().catch(() => {});
         if ('mediaSession' in navigator) { navigator.mediaSession.metadata = new MediaMetadata({ title: song.title, artist: song.artist, album: `KAYLUM: ${song.category}`, artwork: [{ src: albumArtEl.src, sizes: '250x250', type: 'image/jpeg' }] }); }
     }
 
@@ -365,11 +426,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function playPrevSong() { if (currentPlaylist.length === 0) return; currentSongIndex = (currentSongIndex - 1 + currentPlaylist.length) % currentPlaylist.length; loadSong(currentSongIndex); }
     function handleSongEnd() { if (isRepeatActive) { audioPlayer.currentTime = 0; audioPlayer.play(); } else { playNextSong(); } }
-    function togglePlayPause() { if (audioPlayer.paused) { audioPlayer.play().catch(e => {}); } else { audioPlayer.pause(); } }
+    function togglePlayPause() { if (audioPlayer.paused) { audioPlayer.play().catch(() => {}); } else { audioPlayer.pause(); } }
     function toggleRepeat() { isRepeatActive = !isRepeatActive; repeatBtn.classList.toggle('active', isRepeatActive); }
-    function shareSong() { if (currentSongIndex < 0) return; const songId = currentPlaylist[currentSongIndex].publicId; const shareUrl = `${window.location.origin}${window.location.pathname}?song=${songId}`; navigator.clipboard.writeText(shareUrl).then(() => { shareBtn.innerHTML = '<i class="bi bi-check-lg"></i>'; setTimeout(() => { shareBtn.innerHTML = '<i class="bi bi-share-fill"></i>'; }, 2000); }).catch(err => { alert("No se pudo copiar."); }); }
+    function shareSong() { if (currentSongIndex < 0) return; const songId = currentPlaylist[currentSongIndex].publicId; const shareUrl = `${window.location.origin}${window.location.pathname}?song=${songId}`; navigator.clipboard.writeText(shareUrl).then(() => { shareBtn.innerHTML = '<i class="bi bi-check-lg"></i>'; setTimeout(() => { shareBtn.innerHTML = '<i class="bi bi-share-fill"></i>'; }, 2000); }).catch(() => alert("No se pudo copiar.")); }
 
-    // --- Lógica de Playlist (Nueva y Mejorada) ---
     function getPlaylistForCategory(category) {
         if (category === 'Favoritos') return allSongs.filter(song => userFavorites.includes(song.publicId));
         if (category === 'Guardados') return allSongs.filter(song => downloadedSongs.has(song.publicId));
@@ -380,44 +440,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const isPlaying = !audioPlayer.paused && audioPlayer.src;
         if (isPlaying) {
             nextPlaylistInfo = { playlist: newPlaylist, category: currentCategory };
-            displayedPlaylist = newPlaylist; // Actualiza la vista visual
-            currentPage = 1;
-            updatePaginatedView();
+            displayedPlaylist = newPlaylist;
+            currentPage = 1; updatePaginatedView();
         } else {
             currentPlaylist = newPlaylist;
             displayedPlaylist = newPlaylist;
-            currentPage = 1;
-            updatePaginatedView();
+            currentPage = 1; updatePaginatedView();
             if (currentPlaylist.length > 0) loadSong(0);
         }
     }
 
     function loadCategory(category) {
         if (category === currentCategory && !nextPlaylistInfo) return;
+        const isPlaying = !audioPlayer.paused && audioPlayer.src;
         currentCategory = category;
         const newSourceList = getPlaylistForCategory(category);
         const newPlaylist = isShuffleActive ? shuffleArray(newSourceList) : [...newSourceList];
         
         document.querySelectorAll('.category-tabs button').forEach(btn => btn.classList.toggle('active', btn.dataset.category === category));
 
-        const isPlaying = !audioPlayer.paused && audioPlayer.src;
         if (isPlaying) {
             nextPlaylistInfo = { playlist: newPlaylist, category: category };
             displayedPlaylist = newPlaylist;
-            currentPage = 1;
-            updatePaginatedView();
         } else {
             currentPlaylist = newPlaylist;
             displayedPlaylist = newPlaylist;
-            currentPage = 1;
-            updatePaginatedView();
-            if (currentPlaylist.length > 0) {
-                loadSong(0);
-            } else {
-                songTitleEl.textContent = "Sin canciones"; songArtistEl.textContent = "Categoría vacía";
-                albumArtEl.src = defaultCover; audioPlayer.src = "";
-                updateFavoriteStatus(null); updateDownloadButtonStatus(null, 'not-downloaded');
-            }
+        }
+        currentPage = 1;
+        updatePaginatedView();
+        if (!isPlaying && currentPlaylist.length > 0) {
+            loadSong(0);
+        } else if (!isPlaying && currentPlaylist.length === 0) {
+            songTitleEl.textContent = "Sin canciones"; songArtistEl.textContent = "Categoría vacía";
+            albumArtEl.src = defaultCover; audioPlayer.src = "";
+            updateFavoriteStatus(null); updateDownloadButtonStatus(null, 'not-downloaded');
         }
     }
 
@@ -428,54 +484,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const newPlaylist = isShuffleActive ? shuffleArray(sourceList) : [...sourceList];
         handlePlaylistUpdate(newPlaylist);
     }
-    // --- Fin de Lógica de Playlist ---
 
+    // --- Renderizado y Paginación ---
     function renderPlaylistView(playlistToRender) {
         if (!playlistToRender || playlistToRender.length === 0) {
             let message = 'No hay canciones en esta categoría.';
             if(searchInput.value.trim()) message = 'No se encontraron resultados.';
             else if (currentCategory === 'Guardados') message = 'Descarga canciones para escucharlas aquí.';
             else if (currentCategory === 'Favoritos') message = 'Marca tus canciones favoritas con el corazón.';
-            playlistViewContainer.innerHTML = `<p style="text-align:center; padding: 20px 0; color:var(--secondary-text-color);">${message}</p>`;
-            return;
+            playlistViewContainer.innerHTML = `<p style="text-align:center; padding: 20px 0; color:var(--secondary-text-color);">${message}</p>`; return;
         }
         const listHTML = playlistToRender.map(song => {
-            return `<li data-global-index="${allSongs.findIndex(s => s.publicId === song.publicId)}">
-                        <i class="bi bi-music-note-beamed icon"></i>
-                        <div class="track-details">
-                            <div class="title">${song.title}</div>
-                            <div class="artist">${song.artist}</div>
-                        </div>
-                        <div class="playlist-actions">
-                            <button class="playlist-fav-btn" data-song-id="${song.publicId}" title="Añadir/Quitar de Favoritos"><i class="bi bi-heart"></i></button>
-                            <button class="download-btn" data-song-id="${song.publicId}" title="Descargar"><i class="bi bi-cloud-arrow-down"></i></button>
-                        </div>
-                    </li>`;
+            return `<li data-global-index="${allSongs.findIndex(s => s.publicId === song.publicId)}"><i class="bi bi-music-note-beamed icon"></i><div class="track-details"><div class="title">${song.title}</div><div class="artist">${song.artist}</div></div><div class="playlist-actions"><button class="playlist-fav-btn" data-song-id="${song.publicId}"></button><button class="download-btn" data-song-id="${song.publicId}"></button></div></li>`;
         }).join('');
         playlistViewContainer.innerHTML = `<ol>${listHTML}</ol>`;
-        playlistToRender.forEach(song => {
-            updateFavoriteStatus(song.publicId);
-            updateDownloadButtonStatus(song.publicId, downloadedSongs.has(song.publicId) ? 'downloaded' : 'not-downloaded');
-        });
+        playlistToRender.forEach(song => { updateFavoriteStatus(song.publicId); updateDownloadButtonStatus(song.publicId, downloadedSongs.has(song.publicId) ? 'downloaded' : 'not-downloaded'); });
         updatePlaylistHighlight();
     }
 
     function renderCategoryTabs() { const categories = Object.keys(playlistsData); let buttonsHTML = ''; if (downloadedSongs.size > 0) buttonsHTML += `<button data-category="Guardados"><i class="bi bi-cloud-check"></i> Guardados</button>`; if (userFavorites.length > 0) buttonsHTML += `<button data-category="Favoritos"><i class="bi bi-star"></i> Favoritos</button>`; categories.filter(c => c !== 'Favoritos' && c !== 'Guardados' && !c.startsWith('Artista:')).forEach(c => { buttonsHTML += `<button data-category="${c}">${c}</button>`; }); categoryTabsContainer.innerHTML = buttonsHTML; document.querySelectorAll('.category-tabs button').forEach(btn => btn.classList.toggle('active', btn.dataset.category === currentCategory)); }
-    function updatePlaylistHighlight() { if (currentSongIndex < 0 || !currentPlaylist[currentSongIndex]) { document.querySelectorAll('.playlist-view li').forEach(li => li.classList.remove('playing')); return; } const currentSong = currentPlaylist[currentSongIndex]; const globalIndex = allSongs.findIndex(s => s.publicId === currentSong.publicId); document.querySelectorAll('.playlist-view li').forEach(li => { li.classList.toggle('playing', parseInt(li.dataset.globalIndex) === globalIndex); }); }
+    function updatePlaylistHighlight() { if (currentSongIndex < 0 || !currentPlaylist[currentSongIndex]) { document.querySelectorAll('.playlist-view li').forEach(li => li.classList.remove('playing')); return; } const currentSongId = currentPlaylist[currentSongIndex].publicId; document.querySelectorAll('.playlist-view li').forEach(li => { const songId = allSongs[parseInt(li.dataset.globalIndex)]?.publicId; li.classList.toggle('playing', songId === currentSongId); }); }
     function updatePaginatedView() { const searchTerm = searchInput.value.trim(); let listSource = displayedPlaylist; if (searchTerm.length > 1) { listSource = fuse.search(searchTerm).map(result => result.item); document.querySelectorAll('.category-tabs button').forEach(btn => btn.classList.remove('active')); } else { document.querySelectorAll('.category-tabs button').forEach(btn => btn.classList.toggle('active', btn.dataset.category === currentCategory)); } const paginatedSongs = listSource.slice((currentPage - 1) * songsPerPage, currentPage * songsPerPage); renderPlaylistView(paginatedSongs); renderPaginationControls(listSource.length); }
     function renderPaginationControls(totalItems) { const totalPages = Math.ceil(totalItems / songsPerPage); paginationControlsContainer.style.display = totalPages > 1 ? 'flex' : 'none'; if (totalPages <= 1) { paginationControlsContainer.innerHTML = ''; return; } let buttonsHTML = `<button data-page="prev" ${currentPage === 1 ? 'disabled' : ''}><</button>`; let startPage = Math.max(1, currentPage - 1); let endPage = Math.min(totalPages, currentPage + 1); if (currentPage === 1) endPage = Math.min(totalPages, 3); if (currentPage === totalPages) startPage = Math.max(1, totalPages - 2); for (let i = startPage; i <= endPage; i++) { buttonsHTML += `<button data-page="${i}" class="${i === currentPage ? 'active' : ''}">${i}</button>`; } buttonsHTML += `<button data-page="next" ${currentPage === totalPages ? 'disabled' : ''}>></button>`; paginationControlsContainer.innerHTML = buttonsHTML; }
 
-    async function loadSkins() { try { const response = await fetch(`${skinsPath}skins.json`); if (!response.ok) throw new Error('No se encontró skins.json'); const skinFiles = await response.json(); skins = skinFiles.map(file => `${skinsPath}${file}`); if (skins.length > 0) { const savedSkinIndex = parseInt(localStorage.getItem('kaylum_skinIndex'), 10); currentSkinIndex = (!isNaN(savedSkinIndex) && savedSkinIndex < skins.length) ? savedSkinIndex : 0; const initialSkin = skins[currentSkinIndex]; const extension = initialSkin.split('.').pop(); if (['webm', 'mp4'].includes(extension)) { backgroundVideo.innerHTML = `<source src="${initialSkin}" type="video/${extension}">`; } else { backgroundVideo.style.backgroundImage = `url('${initialSkin}')`; backgroundVideo.innerHTML = ''; } backgroundVideo.load(); backgroundVideo.play().catch(e => {}); } } catch (error) { console.warn("No se pudo cargar la lista de skins:", error.message); skins = []; } }
-    function loadUserSettings() { const savedColor = localStorage.getItem('kaylum_textColor'); if (savedColor) { colorPicker.value = savedColor; } const savedFavorites = localStorage.getItem('kaylum_favorites'); if (savedFavorites) { userFavorites = JSON.parse(savedFavorites); } if (localStorage.getItem('kaylum_skins_downloaded') === 'true') { downloadSkinsBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Skins Guardados'; downloadSkinsBtn.disabled = true; } }
+    // --- Carga Inicial y Eventos ---
+    async function loadSkins() { try { const response = await fetch(`${skinsPath}skins.json`); if (!response.ok) return; const skinFiles = await response.json(); skins = skinFiles.map(file => `${skinsPath}${file}`); if (skins.length > 0) { const savedSkinIndex = parseInt(localStorage.getItem('kaylum_skinIndex'), 10) || 0; currentSkinIndex = savedSkinIndex < skins.length ? savedSkinIndex : 0; const initialSkin = skins[currentSkinIndex]; const extension = initialSkin.split('.').pop(); if (['webm', 'mp4'].includes(extension)) { backgroundVideo.innerHTML = `<source src="${initialSkin}" type="video/${extension}">`; } else { backgroundVideo.style.backgroundImage = `url('${initialSkin}')`; backgroundVideo.innerHTML = ''; } backgroundVideo.load(); backgroundVideo.play().catch(() => {}); } } catch (error) { console.warn("No se pudo cargar skins:", error.message); } }
+    function loadUserSettings() { const savedColor = localStorage.getItem('kaylum_textColor'); if (savedColor) colorPicker.value = savedColor; const savedFavorites = localStorage.getItem('kaylum_favorites'); if (savedFavorites) userFavorites = JSON.parse(savedFavorites); if (localStorage.getItem('kaylum_skins_downloaded') === 'true') { downloadSkinsBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Skins Guardados'; downloadSkinsBtn.disabled = true; } }
     
     async function init() {
         playlistViewContainer.innerHTML = `<p style="text-align:center; padding: 40px 0; color:var(--secondary-text-color); font-style: italic;">Cargando música... <span class="spinner"></span></p>`;
         loadUserSettings();
         await loadSkins();
-        try { const response = await fetch(`${googleSheetCsvUrl}&_=${new Date().getTime()}`); if (!response.ok) throw new Error("Red no disponible"); const csvText = await response.text(); if(!csvText) throw new Error("CSV vacío."); const rows = csvText.trim().replace(/\r/g, '').split('\n').slice(1); allSongs = []; playlistsData = {}; rows.forEach(row => { const [title, artist, category, publicId, cover, information] = parseCsvRow(row); if (!category || !publicId || !title) return; const songObject = { title, artist, category, publicId, cover, information, publicUrl: `${cloudinaryBaseUrl}${publicId}` }; if (!playlistsData[category]) playlistsData[category] = []; playlistsData[category].push(songObject); allSongs.push(songObject); }); if (allSongs.length === 0) throw new Error("No se parsearon canciones."); } catch (error) { console.warn("MODO OFFLINE activado:", error.message); const savedMetadata = getDownloadedSongMetadata(); allSongs = Object.values(savedMetadata); if (allSongs.length > 0) { allSongs.forEach(song => { if (!playlistsData[song.category]) playlistsData[song.category] = []; playlistsData[song.category].push(song); }); } }
-        if (allSongs.length > 0) { allSongs.reverse(); for (const category in playlistsData) { if (Array.isArray(playlistsData[category])) { playlistsData[category].reverse(); } } }
+        try { const response = await fetch(`${googleSheetCsvUrl}&_=${new Date().getTime()}`); if (!response.ok) throw new Error("Network"); const csvText = await response.text(); if(!csvText) throw new Error("Empty CSV"); const rows = csvText.trim().replace(/\r/g, '').split('\n').slice(1); allSongs = []; playlistsData = {}; rows.forEach(row => { const [title, artist, category, publicId, cover, information] = parseCsvRow(row); if (!category || !publicId || !title) return; const songObject = { title, artist, category, publicId, cover, information, publicUrl: `${cloudinaryBaseUrl}${publicId}` }; if (!playlistsData[category]) playlistsData[category] = []; playlistsData[category].push(songObject); allSongs.push(songObject); }); if (allSongs.length === 0) throw new Error("No songs parsed"); } catch (error) { console.warn("MODO OFFLINE:", error.message); const savedMetadata = getDownloadedSongMetadata(); allSongs = Object.values(savedMetadata); if (allSongs.length > 0) { allSongs.forEach(song => { if (!playlistsData[song.category]) playlistsData[song.category] = []; playlistsData[song.category].push(song); }); } }
+        
         fuse = new Fuse(allSongs, { keys: ['title', 'artist', 'information'], threshold: 0.4, minMatchCharLength: 2 });
-        if (userFavorites.length > 0) playlistsData['Favoritos'] = []; if (downloadedSongs.size > 0) playlistsData['Guardados'] = [];
+        if (userFavorites.length > 0) playlistsData['Favoritos'] = [];
+        if (downloadedSongs.size > 0) playlistsData['Guardados'] = [];
         
         const urlParams = new URLSearchParams(window.location.search);
         const songIdFromUrl = urlParams.get('song');
@@ -484,13 +528,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (songIdFromUrl) { initialCategory = allSongs.find(s => s.publicId === songIdFromUrl)?.category || initialCategory; }
         
         loadCategory(initialCategory || 'Guardados');
-        renderCategoryTabs(); // Renderiza las pestañas después de cargar la primera categoría
+        renderCategoryTabs();
 
         if (songIdFromUrl) {
             const songToPlayIndex = currentPlaylist.findIndex(s => s.publicId === songIdFromUrl);
             if (songToPlayIndex !== -1) loadSong(songToPlayIndex);
-        } else if (currentPlaylist.length === 0) {
-            playlistViewContainer.innerHTML = `<p style="text-align:center; padding: 20px 0; color:var(--secondary-text-color);">No hay canciones disponibles.</p>`;
+        } else if (currentPlaylist.length === 0 && allSongs.length > 0) {
+            // Si la categoría inicial estaba vacía, buscar una que no lo esté
+            const fallbackCategory = Object.keys(playlistsData).find(cat => playlistsData[cat].length > 0);
+            if (fallbackCategory) loadCategory(fallbackCategory);
+        } else if (allSongs.length === 0) {
+             playlistViewContainer.innerHTML = `<p style="text-align:center; padding: 20px 0; color:var(--secondary-text-color);">No hay canciones disponibles.</p>`;
         }
         setupEventListeners();
     }
@@ -499,22 +547,17 @@ document.addEventListener('DOMContentLoaded', () => {
         audioPlayer.addEventListener('ended', handleSongEnd);
         playlistViewContainer.addEventListener('click', (e) => {
             const targetLi = e.target.closest('li');
+            if (!targetLi) return;
             const downloadBtn = e.target.closest('.download-btn');
             const favBtn = e.target.closest('.playlist-fav-btn');
             if (downloadBtn) { e.stopPropagation(); triggerDownloadProcess(downloadBtn.dataset.songId); return; }
             if (favBtn) { e.stopPropagation(); toggleFavorite(favBtn.dataset.songId); return; }
-            if (targetLi) {
-                const globalIndex = parseInt(targetLi.dataset.globalIndex);
-                const clickedSongId = allSongs[globalIndex].publicId;
-                const playlistIndex = displayedPlaylist.findIndex(s => s.publicId === clickedSongId);
-                if (playlistIndex !== -1) {
-                    currentPlaylist = displayedPlaylist;
-                    nextPlaylistInfo = null; // Cancela cualquier cambio pendiente
-                    loadSong(playlistIndex);
-                }
-            }
+            const globalIndex = parseInt(targetLi.dataset.globalIndex);
+            const clickedSongId = allSongs[globalIndex].publicId;
+            const playlistIndex = displayedPlaylist.findIndex(s => s.publicId === clickedSongId);
+            if (playlistIndex !== -1) { currentPlaylist = displayedPlaylist; nextPlaylistInfo = null; loadSong(playlistIndex); }
         });
-        songArtistEl.addEventListener('click', () => { const artistName = songArtistEl.textContent; if (!artistName || artistName === 'para comenzar') return; const artistSongs = allSongs.filter(song => song.artist === artistName); if (artistSongs.length > 0) { const artistCatName = `Artista: ${artistName}`; playlistsData[artistCatName] = artistSongs; renderCategoryTabs(); loadCategory(artistCatName); } });
+        songArtistEl.addEventListener('click', () => { const artistName = songArtistEl.textContent; if (!artistName || artistName === 'para comenzar') return; const artistSongs = getPlaylistForCategory(`Artista: ${artistName}`); if (artistSongs.length > 0) { playlistsData[`Artista: ${artistName}`] = artistSongs; renderCategoryTabs(); loadCategory(`Artista: ${artistName}`); } });
         categoryTabsContainer.addEventListener('click', (e) => { const btn = e.target.closest('button'); if (btn) loadCategory(btn.dataset.category) });
         paginationControlsContainer.addEventListener('click', (e) => { const button = e.target.closest('button'); if (!button || button.disabled) return; const pageAction = button.dataset.page; if (pageAction === 'prev') currentPage--; else if (pageAction === 'next') currentPage++; else currentPage = parseInt(pageAction); updatePaginatedView(); });
         prevBtn.addEventListener('click', playPrevSong);
@@ -527,11 +570,11 @@ document.addEventListener('DOMContentLoaded', () => {
         searchInput.addEventListener('input', () => { currentPage = 1; updatePaginatedView(); });
         aboutToggleBtn.addEventListener('click', () => aboutContent.classList.toggle('is-open'));
         songInfoToggleBtn.addEventListener('click', () => songInformationEl.classList.toggle('is-open'));
-        adventureModeBtn.addEventListener('click', () => { if (allSongs.length > 0) { currentCategory = 'Aventura Musical'; playlistsData[currentCategory] = shuffleArray(allSongs); renderCategoryTabs(); loadCategory(currentCategory); } });
-        changeSkinBtn.addEventListener('click', () => { if (skins.length === 0) { const message = navigator.onLine ? "No hay skins disponibles. Presiona 'Guardar Skins' primero." : "No hay skins guardados para usar sin conexión."; alert(message); return; } currentSkinIndex = (currentSkinIndex + 1) % skins.length; localStorage.setItem('kaylum_skinIndex', currentSkinIndex); const newSkinSrc = skins[currentSkinIndex]; const extension = newSkinSrc.split('.').pop().toLowerCase(); backgroundVideo.style.opacity = 0; setTimeout(() => { if (['webm', 'mp4'].includes(extension)) { backgroundVideo.style.backgroundImage = 'none'; backgroundVideo.innerHTML = `<source src="${newSkinSrc}" type="video/${extension}">`; backgroundVideo.load(); backgroundVideo.play().catch(e => {}); } else { backgroundVideo.innerHTML = ''; backgroundVideo.style.backgroundImage = `url('${newSkinSrc}')`; } backgroundVideo.style.opacity = 1; }, 500); });
+        adventureModeBtn.addEventListener('click', () => { if (allSongs.length > 0) { currentCategory = 'Aventura Musical'; const adventurePlaylist = shuffleArray(allSongs); playlistsData[currentCategory] = adventurePlaylist; renderCategoryTabs(); handlePlaylistUpdate(adventurePlaylist); } });
+        changeSkinBtn.addEventListener('click', () => { if (skins.length === 0) { alert(navigator.onLine ? "No hay skins. Presiona 'Guardar Skins'." : "No hay skins guardados."); return; } currentSkinIndex = (currentSkinIndex + 1) % skins.length; localStorage.setItem('kaylum_skinIndex', currentSkinIndex); const newSkinSrc = skins[currentSkinIndex]; const extension = newSkinSrc.split('.').pop().toLowerCase(); backgroundVideo.style.opacity = 0; setTimeout(() => { if (['webm', 'mp4'].includes(extension)) { backgroundVideo.style.backgroundImage = 'none'; backgroundVideo.innerHTML = `<source src="${newSkinSrc}" type="video/${extension}">`; backgroundVideo.load(); backgroundVideo.play().catch(() => {}); } else { backgroundVideo.innerHTML = ''; backgroundVideo.style.backgroundImage = `url('${newSkinSrc}')`; } backgroundVideo.style.opacity = 1; }, 500); });
         colorPicker.addEventListener('input', (e) => { document.documentElement.style.setProperty('--text-color', e.target.value); localStorage.setItem('kaylum_textColor', e.target.value); });
         document.addEventListener('keydown', (e) => { if (document.activeElement !== searchInput && e.code === 'Space') { e.preventDefault(); togglePlayPause(); } });
-        if ('mediaSession' in navigator) { navigator.mediaSession.setActionHandler('play', () => audioPlayer.play()); navigator.mediaSession.setActionHandler('pause', () => audioPlayer.pause()); navigator.mediaSession.setActionHandler('previoustrack', playPrevSong); navigator.mediaSession.setActionHandler('nexttrack', playNextSong); }
+        if ('mediaSession' in navigator) { navigator.mediaSession.setActionHandler('play', playPrevSong); navigator.mediaSession.setActionHandler('pause', () => audioPlayer.pause()); navigator.mediaSession.setActionHandler('previoustrack', playPrevSong); navigator.mediaSession.setActionHandler('nexttrack', playNextSong); }
         downloadSkinsBtn.addEventListener('click', handleDownloadSkinsClick);
     }
     
