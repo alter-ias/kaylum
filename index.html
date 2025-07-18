@@ -72,7 +72,10 @@
         #audio-player { width: 100%; }
         #song-info-toggle-btn { display: none; width: 100%; background-color: transparent; border: 1px solid var(--player-border-color); color: var(--text-color); font-family: 'Montserrat', sans-serif; font-weight: 500; padding: 8px 18px; border-radius: 20px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 15px; }
         #song-info-toggle-btn:hover { background-color: rgba(255, 255, 255, 0.1); border-color: var(--text-color); }
-        #song-information { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out, padding 0.5s ease-out; padding: 0; border-top: none; text-align: left; font-size: 0.95rem; line-height: 1.6; color: var(--secondary-text-color); text-shadow: var(--text-shadow); white-space: pre-wrap; }
+        
+        /* CORRECCIÓN CSS */
+        #song-information { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out, padding 0.5s ease-out; padding: 0; border-top: none; text-align: center; font-size: 0.95rem; line-height: 1.6; color: var(--secondary-text-color); text-shadow: var(--text-shadow); white-space: pre-wrap; }
+        
         #song-information.is-open { max-height: 250px; overflow-y: auto; padding: 20px 10px 20px 0; border-top: 1px solid rgba(255, 255, 255, 0.1); }
         .playlist-view { margin-top: 20px; min-height: 295px; border-radius: 10px; padding-right: 5px; }
         .playlist-view ol { list-style: none; padding: 0; margin: 0; }
@@ -104,7 +107,10 @@
         #about-toggle-btn { background-color: transparent; border: 1px solid var(--player-border-color); color: var(--text-color); font-family: 'Montserrat', sans-serif; font-weight: 500; border-radius: 20px; cursor: pointer; transition: all 0.3s ease; width: 100%; font-size: 1.2rem; padding: 10px 20px; }
         #about-toggle-btn:hover { background-color: rgba(255, 255, 255, 0.1); border-color: var(--text-color); }
         #about-content { max-height: 0; overflow: hidden; transition: max-height 0.7s ease-in-out; padding: 0 30px; text-align: center; }
-        #about-content p { margin-bottom: 1.5em; text-align: justify; }
+        
+        /* CORRECCIÓN CSS */
+        #about-content p { margin-bottom: 1.5em; text-align: center; }
+
         #about-content p:last-child { margin-bottom: 0; }
         #about-content.is-open { max-height: 2000px; padding: 30px 30px 30px; }
         .flux-diagram { width: 100%; max-width: 500px; border-radius: 10px; margin: 25px auto; border: 1px solid var(--player-border-color); display: block; }
@@ -312,7 +318,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!songToProcess || !navigator.serviceWorker.controller) { alert("No se pudo iniciar la operación."); return; }
         if (downloadedSongs.has(songId)) {
             updateDownloadButtonStatus(songId, 'deleting');
-            navigator.serviceWorker.controller.postMessage({ action: 'DELETE_SONG', songId: songId });
+            // CORRECCIÓN: Se añaden las URLs al mensaje de borrado para que el SW sepa qué borrar del caché.
+            navigator.serviceWorker.controller.postMessage({ 
+                action: 'DELETE_SONG', 
+                songId: songId,
+                songUrl: songToProcess.publicUrl,
+                coverUrl: songToProcess.cover || ''
+            });
         } else {
             updateDownloadButtonStatus(songId, 'downloading');
             saveDownloadedSongMetadata(songToProcess);
@@ -510,6 +522,41 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadSkins() { try { const response = await fetch(`${skinsPath}skins.json`); if (!response.ok) return; const skinFiles = await response.json(); skins = skinFiles.map(file => `${skinsPath}${file}`); if (skins.length > 0) { const savedSkinIndex = parseInt(localStorage.getItem('kaylum_skinIndex'), 10) || 0; currentSkinIndex = savedSkinIndex < skins.length ? savedSkinIndex : 0; const initialSkin = skins[currentSkinIndex]; const extension = initialSkin.split('.').pop(); if (['webm', 'mp4'].includes(extension)) { backgroundVideo.innerHTML = `<source src="${initialSkin}" type="video/${extension}">`; } else { backgroundVideo.style.backgroundImage = `url('${initialSkin}')`; backgroundVideo.innerHTML = ''; } backgroundVideo.load(); backgroundVideo.play().catch(() => {}); } } catch (error) { console.warn("No se pudo cargar skins:", error.message); } }
     function loadUserSettings() { const savedColor = localStorage.getItem('kaylum_textColor'); if (savedColor) colorPicker.value = savedColor; const savedFavorites = localStorage.getItem('kaylum_favorites'); if (savedFavorites) userFavorites = JSON.parse(savedFavorites); if (localStorage.getItem('kaylum_skins_downloaded') === 'true') { downloadSkinsBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Skins Guardados'; downloadSkinsBtn.disabled = true; } }
     
+    // FUNCIÓN RESTAURADA para corregir el error de la consola
+    async function handleDownloadSkinsClick() {
+        if (!navigator.serviceWorker.controller) { alert('El controlador de la aplicación no está listo. Por favor, recarga la página.'); return; }
+        downloadSkinsBtn.disabled = true;
+        downloadSkinsBtn.innerHTML = '<span class="spinner"></span> Guardando...';
+        try {
+            const response = await fetch(`${skinsPath}skins.json`);
+            if (!response.ok) throw new Error('No se pudo obtener la lista de skins.');
+            const skinFiles = await response.json();
+            navigator.serviceWorker.controller.postMessage({ action: 'DOWNLOAD_SKIN_LIST', url: `${skinsPath}skins.json` });
+            skinFiles.forEach(file => { navigator.serviceWorker.controller.postMessage({ action: 'DOWNLOAD_SKIN', url: `${skinsPath}${file}` }); });
+            const totalDownloads = skinFiles.length + 1;
+            let downloadedCount = 0;
+            const skinDownloadListener = (event) => {
+                const action = event.data.action;
+                if (action === 'SKIN_DOWNLOADED' || action === 'SKIN_LIST_DOWNLOADED' || action === 'SKIN_DOWNLOAD_ERROR') {
+                    downloadedCount++;
+                    downloadSkinsBtn.innerHTML = `<span class="spinner"></span> Guardando ${downloadedCount}/${totalDownloads}`;
+                    if (downloadedCount === totalDownloads) {
+                        navigator.serviceWorker.removeEventListener('message', skinDownloadListener);
+                        downloadSkinsBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Skins Guardados';
+                        localStorage.setItem('kaylum_skins_downloaded', 'true');
+                        alert('¡Skins guardados! Ahora puedes cambiarlos sin conexión.');
+                        loadSkins();
+                    }
+                }
+            };
+            navigator.serviceWorker.addEventListener('message', skinDownloadListener);
+        } catch (error) {
+            console.error('Error al descargar skins:', error);
+            downloadSkinsBtn.innerHTML = '<i class="bi bi-x-circle"></i> Error';
+            downloadSkinsBtn.disabled = false;
+        }
+    }
+
     async function init() {
         playlistViewContainer.innerHTML = `<p style="text-align:center; padding: 40px 0; color:var(--secondary-text-color); font-style: italic;">Cargando música... <span class="spinner"></span></p>`;
         loadUserSettings();
@@ -533,7 +580,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const songToPlayIndex = currentPlaylist.findIndex(s => s.publicId === songIdFromUrl);
             if (songToPlayIndex !== -1) loadSong(songToPlayIndex);
         } else if (currentPlaylist.length === 0 && allSongs.length > 0) {
-            // Si la categoría inicial estaba vacía, buscar una que no lo esté
             const fallbackCategory = Object.keys(playlistsData).find(cat => playlistsData[cat].length > 0);
             if (fallbackCategory) loadCategory(fallbackCategory);
         } else if (allSongs.length === 0) {
@@ -556,7 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const playlistIndex = displayedPlaylist.findIndex(s => s.publicId === clickedSongId);
             if (playlistIndex !== -1) { currentPlaylist = displayedPlaylist; nextPlaylistInfo = null; loadSong(playlistIndex); }
         });
-        songArtistEl.addEventListener('click', () => { const artistName = songArtistEl.textContent; if (!artistName || artistName === 'para comenzar') return; const artistSongs = getPlaylistForCategory(`Artista: ${artistName}`); if (artistSongs.length > 0) { playlistsData[`Artista: ${artistName}`] = artistSongs; renderCategoryTabs(); loadCategory(`Artista: ${artistName}`); } });
+        songArtistEl.addEventListener('click', () => { const artistName = songArtistEl.textContent; if (!artistName || artistName === 'para comenzar') return; const artistSongs = allSongs.filter(song => song.artist === artistName); if (artistSongs.length > 0) { const artistCatName = `Artista: ${artistName}`; playlistsData[artistCatName] = artistSongs; renderCategoryTabs(); loadCategory(artistCatName); } });
         categoryTabsContainer.addEventListener('click', (e) => { const btn = e.target.closest('button'); if (btn) loadCategory(btn.dataset.category) });
         paginationControlsContainer.addEventListener('click', (e) => { const button = e.target.closest('button'); if (!button || button.disabled) return; const pageAction = button.dataset.page; if (pageAction === 'prev') currentPage--; else if (pageAction === 'next') currentPage++; else currentPage = parseInt(pageAction); updatePaginatedView(); });
         prevBtn.addEventListener('click', playPrevSong);
