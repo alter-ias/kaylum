@@ -115,13 +115,14 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-
-    // URL CORRECTA, OBTENIDA DIRECTAMENTE DE LA PUBLICACIÓN DE TU HOJA
-    const googleSheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQYxH4687R-wV-pUfS7wW-RkKDT5sH7V7tFfA_M-P0A9n29G1zJ6c92wD4cO08vD_tS99Jc/pub?gid=0&single=true&output=csv';
+    
+    // URL CORRECTA, proporcionada por ti. ¡Con esta funcionará!
+    const googleSheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=0&single=true&output=csv';
 
     let allProducts = [];
     let cart = JSON.parse(localStorage.getItem('beOriginalFitCart')) || [];
 
+    // ... (El resto del script es idéntico y no necesita cambios) ...
     const catalogView = document.getElementById('catalog-view');
     const productDetailView = document.getElementById('product-detail-view');
     const productGrid = document.getElementById('product-grid');
