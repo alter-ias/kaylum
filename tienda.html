@@ -116,6 +116,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
+    console.log("✅ 1. DOM listo. Iniciando script de la tienda.");
+    
     // URL CORRECTA, la que me proporcionaste.
     const googleSheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=0&single=true&output=csv';
 
@@ -125,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const catalogView = document.getElementById('catalog-view');
     const productDetailView = document.getElementById('product-detail-view');
     const productGrid = document.getElementById('product-grid');
-    // ...el resto de los selectores del DOM
     const cartCounter = document.getElementById('cart-counter');
     const backToCatalogBtn = document.getElementById('back-to-catalog-btn');
     const detailImage = document.getElementById('detail-image');
@@ -137,57 +138,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Parsea texto CSV a un array de objetos.
-     * Esta versión es más robusta.
+     * Esta versión es mucho más robusta y tolerante a errores.
      */
     function parseCSV(csvText) {
-        const lines = csvText.trim().split(/\r?\n/);
-        if (lines.length < 2) return [];
+        console.log("🕵️ 4. Analizando el texto CSV...");
+        try {
+            const lines = csvText.trim().split(/\r?\n/);
+            if (lines.length < 2) {
+                console.warn("El CSV tiene menos de 2 líneas (solo encabezado o vacío).");
+                return [];
+            }
 
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-        
-        return lines.slice(1).map(line => {
-            if (!line.trim()) return null;
-            const data = line.split(',');
-            return headers.reduce((obj, header, i) => {
-                obj[header] = data[i] ? data[i].trim() : '';
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            console.log("Identificados los siguientes encabezados:", headers);
+            
+            return lines.slice(1).map((line, index) => {
+                if (!line.trim()) return null; // Ignorar líneas vacías
+                
+                const data = line.split(',');
+                const obj = {};
+                headers.forEach((header, i) => {
+                    obj[header] = data[i] ? data[i].trim() : '';
+                });
+                // console.log(`Fila ${index + 2}:`, obj); // Descomenta esto para depuración extrema
                 return obj;
-            }, {});
-        }).filter(Boolean); // Filtra las líneas vacías
+            }).filter(Boolean); // Filtra las líneas que resultaron en 'null'
+        } catch (e) {
+            console.error("Error catastrófico durante el parseo del CSV:", e);
+            return []; // Devuelve array vacío en caso de error
+        }
     }
 
     async function loadProductsData() {
+        console.log("⏳ 2. Intentando descargar datos desde Google Sheets...");
         try {
             const response = await fetch(googleSheetCsvUrl, { cache: 'no-cache' });
+            
+            console.log(`📡 3. Respuesta de la red recibida con estado: ${response.status}`);
             if (!response.ok) {
-                throw new Error(`Error de red al obtener los datos: ${response.status} ${response.statusText}`);
+                throw new Error(`El servidor de Google respondió con un error: ${response.status} ${response.statusText}`);
             }
+            
             const csvText = await response.text();
-            if (!csvText || csvText.trim().length === 0) {
-                throw new Error("El archivo CSV de Google Sheets está vacío o no se pudo cargar.");
+            if (!csvText || csvText.trim() === '') {
+                throw new Error("La respuesta de Google fue exitosa, pero el archivo CSV está vacío.");
             }
             
+            console.log("--- INICIO DEL TEXTO CSV RECIBIDO ---");
+            console.log(csvText);
+            console.log("--- FIN DEL TEXTO CSV RECIBIDO ---");
+
             const parsedData = parseCSV(csvText);
-            
-            // Proceso de validación con diagnóstico en la consola
+            console.log(`✅ 5. CSV parseado. Se encontraron ${parsedData.length} productos potenciales.`);
+
             const requiredFields = ['id', 'nombre', 'precio', 'imagen_url', 'stock'];
-            const validatedProducts = [];
-
-            parsedData.forEach((product, index) => {
-                const missingFields = requiredFields.filter(field => !product[field]);
-                if (missingFields.length > 0) {
-                    console.warn(`Producto en fila ${index + 2} rechazado. Faltan los campos: ${missingFields.join(', ')}`);
-                } else {
-                    validatedProducts.push(product);
-                }
-            });
-
-            allProducts = validatedProducts;
+            allProducts = parsedData.filter(p => requiredFields.every(field => p[field]));
             
+            console.log(`✅ 6. Validación completa. ${allProducts.length} productos son válidos y se mostrarán.`);
+
+            if (parsedData.length > 0 && allProducts.length === 0) {
+                 console.error("ALERTA: Se encontraron productos en el CSV, pero NINGUNO pasó la validación. Revisa que los nombres de las columnas en tu Sheet (id, nombre, precio, imagen_url, stock) sean correctos y que cada producto tenga valor en esas celdas.");
+            }
+
             if (allProducts.length === 0) {
-                productGrid.innerHTML = '<div class="message-container">No se encontraron productos válidos. Revisa la consola (F12) para ver por qué se rechazaron los productos de tu Google Sheet.</div>';
+                productGrid.innerHTML = '<div class="message-container">No se encontraron productos para mostrar. Revisa la consola (F12) para más detalles.</div>';
                 return;
             }
+
             renderCatalog();
+            console.log("🎉 7. ¡Catálogo renderizado en la página!");
 
         } catch (error) {
             console.error('❌ ERROR CRÍTICO:', error);
@@ -202,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
             card.className = 'product-card';
             card.dataset.id = product.id;
             card.innerHTML = `
-                <img src="${product.imagen_url}" alt="${product.nombre}" loading="lazy">
+                <img src="${product.imagen_url}" alt="${product.nombre}" loading="lazy" onerror="this.style.display='none'">
                 <div class="product-card-info">
                     <h3>${product.nombre}</h3>
                     <p class="price">$${parseFloat(product.precio).toFixed(2)}</p>
@@ -263,6 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadProductsData();
     updateCartCounter();
+    console.log("🏁 8. Script finalizado.");
 });
 </script>
 </body>
