@@ -29,9 +29,16 @@
         }
         
         .page-wrapper { position: relative; overflow-x: hidden; }
-        .view-container { width: 100%; min-height: 100vh; padding: 20px; opacity: 1; visibility: visible; transition: opacity 0.5s ease-out, transform 0.5s ease-out; position: absolute; top: 0; left: 0; }
-        .view-container.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; transform: translateX(20px); }
-        #product-detail-view.is-hidden { transform: translateX(-20px); }
+        
+        /* --- CAMBIO CLAVE EN EL CSS --- */
+        .view-container {
+            width: 100%;
+            min-height: 100vh;
+            display: block; /* Por defecto se muestran */
+        }
+        .view-container.is-hidden {
+            display: none; /* Cuando se ocultan, se quitan del layout */
+        }
         
         .main-header { background-color: rgba(30, 30, 30, 0.8); backdrop-filter: blur(10px); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border-color); }
         .main-header .title { font-size: 1.5rem; font-weight: 700; letter-spacing: 1px; }
@@ -39,7 +46,7 @@
         #cart-icon { width: 30px; height: 30px; stroke: var(--primary-color); fill: none; }
         #cart-counter { position: absolute; top: -8px; right: -12px; background-color: var(--primary-color); color: var(--background-color); border-radius: 50%; padding: 2px 6px; font-size: 12px; font-weight: bold; border: 2px solid var(--background-color); }
 
-        #catalog-view main { max-width: 1200px; margin: 2rem auto; }
+        #catalog-view main { max-width: 1200px; margin: 2rem auto; padding: 0 20px; }
         #product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 25px; }
         .product-card { background-color: var(--surface-color); border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease; border: 1px solid var(--border-color); }
         .product-card:hover { transform: translateY(-8px); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); }
@@ -116,9 +123,6 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-    console.log("✅ 1. DOM listo. Iniciando script de la tienda.");
-    
-    // URL CORRECTA, la que me proporcionaste.
     const googleSheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=0&single=true&output=csv';
 
     let allProducts = [];
@@ -135,79 +139,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const detailDescription = document.getElementById('detail-description');
     const addToCartDetailBtn = document.getElementById('add-to-cart-detail-btn');
 
-
-    /**
-     * Parsea texto CSV a un array de objetos.
-     * Esta versión es mucho más robusta y tolerante a errores.
-     */
     function parseCSV(csvText) {
-        console.log("🕵️ 4. Analizando el texto CSV...");
         try {
             const lines = csvText.trim().split(/\r?\n/);
-            if (lines.length < 2) {
-                console.warn("El CSV tiene menos de 2 líneas (solo encabezado o vacío).");
-                return [];
-            }
-
+            if (lines.length < 2) return [];
             const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-            console.log("Identificados los siguientes encabezados:", headers);
-            
-            return lines.slice(1).map((line, index) => {
-                if (!line.trim()) return null; // Ignorar líneas vacías
-                
+            return lines.slice(1).map(line => {
+                if (!line.trim()) return null;
                 const data = line.split(',');
-                const obj = {};
-                headers.forEach((header, i) => {
+                return headers.reduce((obj, header, i) => {
                     obj[header] = data[i] ? data[i].trim() : '';
-                });
-                // console.log(`Fila ${index + 2}:`, obj); // Descomenta esto para depuración extrema
-                return obj;
-            }).filter(Boolean); // Filtra las líneas que resultaron en 'null'
-        } catch (e) {
-            console.error("Error catastrófico durante el parseo del CSV:", e);
-            return []; // Devuelve array vacío en caso de error
-        }
+                    return obj;
+                }, {});
+            }).filter(Boolean);
+        } catch (e) { return []; }
     }
 
     async function loadProductsData() {
-        console.log("⏳ 2. Intentando descargar datos desde Google Sheets...");
         try {
             const response = await fetch(googleSheetCsvUrl, { cache: 'no-cache' });
-            
-            console.log(`📡 3. Respuesta de la red recibida con estado: ${response.status}`);
-            if (!response.ok) {
-                throw new Error(`El servidor de Google respondió con un error: ${response.status} ${response.statusText}`);
-            }
+            if (!response.ok) throw new Error(`Error de red: ${response.status} ${response.statusText}`);
             
             const csvText = await response.text();
-            if (!csvText || csvText.trim() === '') {
-                throw new Error("La respuesta de Google fue exitosa, pero el archivo CSV está vacío.");
-            }
+            if (!csvText || csvText.trim() === '') throw new Error("El archivo CSV está vacío.");
             
-            console.log("--- INICIO DEL TEXTO CSV RECIBIDO ---");
-            console.log(csvText);
-            console.log("--- FIN DEL TEXTO CSV RECIBIDO ---");
-
             const parsedData = parseCSV(csvText);
-            console.log(`✅ 5. CSV parseado. Se encontraron ${parsedData.length} productos potenciales.`);
 
             const requiredFields = ['id', 'nombre', 'precio', 'imagen_url', 'stock'];
             allProducts = parsedData.filter(p => requiredFields.every(field => p[field]));
             
-            console.log(`✅ 6. Validación completa. ${allProducts.length} productos son válidos y se mostrarán.`);
-
-            if (parsedData.length > 0 && allProducts.length === 0) {
-                 console.error("ALERTA: Se encontraron productos en el CSV, pero NINGUNO pasó la validación. Revisa que los nombres de las columnas en tu Sheet (id, nombre, precio, imagen_url, stock) sean correctos y que cada producto tenga valor en esas celdas.");
-            }
-
             if (allProducts.length === 0) {
-                productGrid.innerHTML = '<div class="message-container">No se encontraron productos para mostrar. Revisa la consola (F12) para más detalles.</div>';
+                productGrid.innerHTML = '<div class="message-container">No se encontraron productos válidos. Revisa tu Google Sheet.</div>';
                 return;
             }
-
             renderCatalog();
-            console.log("🎉 7. ¡Catálogo renderizado en la página!");
-
         } catch (error) {
             console.error('❌ ERROR CRÍTICO:', error);
             productGrid.innerHTML = `<div class="message-container error"><h3>Error al Cargar Catálogo</h3><p>${error.message}</p></div>`;
@@ -282,7 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadProductsData();
     updateCartCounter();
-    console.log("🏁 8. Script finalizado.");
 });
 </script>
 </body>
