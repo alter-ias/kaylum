@@ -3,245 +3,522 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Tienda Increíble</title>
-
-    <!-- ================== ESTILOS CSS ================== -->
+    <title>BeOriginalFit</title>
+    
+    <!-- Puedes añadir tu favicon aquí si tienes uno -->
+    <!-- <link rel="icon" type="image/png" href="./assets/img/logo.png"> -->
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        /* Estilos generales */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-            color: #333;
+        /* ================== ESTILOS GENERALES Y VARIABLES ================== */
+        :root {
+            --background-color: #121212;
+            --surface-color: #1e1e1e;
+            --primary-color: #03dac6; /* Un color de acento vibrante */
+            --text-color: #e0e0e0;
+            --secondary-text-color: #a0a0a0;
+            --border-color: #333333;
         }
 
-        header {
-            background-color: #2c3e50;
-            color: white;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { 
+            color: var(--text-color); 
+            font-family: 'Poppins', sans-serif; 
+            background-color: var(--background-color); 
+            min-height: 100vh;
+        }
+        
+        /* ================== ESTRUCTURA Y VISTAS ================== */
+        .page-wrapper {
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .view-container {
+            width: 100%;
+            min-height: 100vh;
+            padding: 20px;
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .view-container.is-hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transform: translateX(20px);
+        }
+        
+        #product-detail-view.is-hidden {
+            transform: translateX(-20px);
+        }
+        
+        /* ================== HEADER Y CARRITO ================== */
+        .main-header {
+            background-color: rgba(30, 30, 30, 0.8);
+            backdrop-filter: blur(10px);
             padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        header h1 {
-            margin: 0;
+        .main-header .title {
             font-size: 1.5rem;
-        }
-
-        main {
-            padding: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
+            font-weight: 700;
+            letter-spacing: 1px;
         }
         
-        main h2 {
-            text-align: center;
-            margin-bottom: 2rem;
-            font-size: 2rem;
-        }
-
-        /* Rejilla de productos */
-        .product-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
-        }
-
-        .product {
-            background-color: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 1.5rem;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-        }
-        
-        .product:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-        }
-
-        .product img {
-            max-width: 100%;
-            height: 200px;
-            object-fit: cover;
-            margin-bottom: 1rem;
-            border-radius: 4px;
-        }
-
-        .product h3 {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .product .price {
-            color: #007BFF;
-            font-weight: bold;
-            font-size: 1.2rem;
-            margin-bottom: 1rem;
-        }
-
-        .product button {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-
-        .product button:hover {
-            background-color: #218838;
-        }
-        
-        .product button:active {
-            transform: scale(0.98);
-        }
-
-        /* Ícono del carrito */
         .cart-icon-container {
             position: relative;
-            cursor: pointer;
         }
 
         #cart-icon {
-            width: 35px;
-            height: 35px;
+            width: 30px;
+            height: 30px;
+            stroke: var(--primary-color);
+            fill: none;
         }
 
         #cart-counter {
             position: absolute;
             top: -8px;
             right: -12px;
-            background-color: #e74c3c;
-            color: white;
+            background-color: var(--primary-color);
+            color: var(--background-color);
             border-radius: 50%;
-            padding: 3px 7px;
+            padding: 2px 6px;
             font-size: 12px;
             font-weight: bold;
-            border: 2px solid #2c3e50;
+            border: 2px solid var(--background-color);
+        }
+
+        /* ================== VISTA DE CATÁLOGO ================== */
+        #catalog-view main {
+            max-width: 1200px;
+            margin: 2rem auto;
+        }
+
+        #product-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+        }
+
+        .product-card {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .product-card img {
+            width: 100%;
+            height: 350px; /* Altura fija para uniformidad */
+            object-fit: cover;
+            display: block;
+        }
+
+        .product-card-info {
+            padding: 15px;
+            text-align: center;
         }
         
-        footer {
-            text-align: center;
-            padding: 2rem;
-            margin-top: 2rem;
-            background-color: #34495e;
-            color: #ecf0f1;
+        .product-card-info h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .product-card-info .price {
+            font-size: 1rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+        
+        /* ================== VISTA DE DETALLE DE PRODUCTO ================== */
+        #product-detail-view {
+            padding-top: 50px;
+        }
+        
+        .back-button {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s, transform 0.3s;
+            z-index: 10;
+        }
+
+        .back-button:hover {
+            background-color: var(--primary-color);
+            color: var(--background-color);
+            transform: scale(1.1);
+        }
+
+        .product-detail-container {
+            display: flex;
+            max-width: 1100px;
+            margin: auto;
+            background-color: var(--surface-color);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .detail-image-container {
+            flex: 1 1 50%;
+        }
+
+        .detail-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .detail-info-container {
+            flex: 1 1 50%;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-info-container h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .detail-info-container .price-tag {
+            font-size: 2rem;
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        
+        .detail-info-container .description {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--secondary-text-color);
+            margin-bottom: 30px;
+            flex-grow: 1;
+        }
+        
+        .detail-options .option-group {
+            margin-bottom: 20px;
+        }
+
+        .detail-options h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+        
+        .detail-options p, .detail-options ul {
+            font-size: 0.9rem;
+            color: var(--secondary-text-color);
+            list-style: none;
+        }
+
+        .add-to-cart-btn {
+            background-color: var(--primary-color);
+            color: var(--background-color);
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 700;
+            width: 100%;
+            text-transform: uppercase;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .add-to-cart-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(3, 218, 198, 0.2);
+        }
+
+        /* ================== SPINNER Y RESPONSIVE ================== */
+        .spinner { display: block; margin: 100px auto; width: 50px; height: 50px; border: 5px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 900px) {
+            #product-grid { grid-template-columns: repeat(2, 1fr); }
+            .product-detail-container { flex-direction: column; }
+            .detail-info-container h2 { font-size: 2rem; }
+            .detail-info-container .price-tag { font-size: 1.5rem; }
+        }
+
+        @media (max-width: 480px) {
+            #product-grid { gap: 15px; }
+            .main-header { padding: 1rem; }
+            .main-header .title { font-size: 1.2rem; }
         }
     </style>
 </head>
 <body>
+    <div class="page-wrapper">
 
-    <!-- ================== ESTRUCTURA HTML ================== -->
-    <header>
-        <h1>Mi Tienda Increíble</h1>
-        <div class="cart-icon-container">
-            <!-- Usamos un SVG para el ícono, así no depende de un enlace externo -->
-            <svg id="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="fill: white;">
-                <circle cx="9" cy="21" r="1"></circle>
-                <circle cx="20" cy="21" r="1"></circle>
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-            </svg>
-            <span id="cart-counter">0</span>
+        <!-- ======================= VISTA CATÁLOGO ======================= -->
+        <div id="catalog-view" class="view-container">
+            <header class="main-header">
+                <h1 class="title">BeOriginalFit</h1>
+                <div class="cart-icon-container">
+                    <svg id="cart-icon" viewBox="0 0 24 24" stroke-width="1.5">
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                    </svg>
+                    <span id="cart-counter">0</span>
+                </div>
+            </header>
+            <main>
+                <div id="product-grid">
+                    <div class="spinner"></div>
+                </div>
+            </main>
         </div>
-    </header>
 
-    <main>
-        <h2>Nuestros Productos</h2>
-        <div id="product-list" class="product-grid">
-            <!-- Los productos se cargarán aquí con JavaScript -->
-            <p>Cargando productos...</p>
+        <!-- ======================= VISTA DETALLE DE PRODUCTO ======================= -->
+        <div id="product-detail-view" class="view-container is-hidden">
+            <button class="back-button" id="back-to-catalog-btn" aria-label="Volver al catálogo">
+                &larr;
+            </button>
+            <div class="product-detail-container">
+                <div class="detail-image-container">
+                    <img id="detail-image" src="" alt="Imagen del producto">
+                </div>
+                <div class="detail-info-container">
+                    <h2 id="detail-name"></h2>
+                    <p class="price-tag" id="detail-price"></p>
+                    <p class="description" id="detail-description"></p>
+                    
+                    <div class="detail-options">
+                        <div class="option-group">
+                            <h4>Colores Disponibles</h4>
+                            <p>Negro, Blanco, Gris (próximamente más)</p>
+                        </div>
+                        <div class="option-group">
+                            <h4>Envíos y Pagos</h4>
+                            <ul>
+                                <li>- Envío estándar (3-5 días hábiles)</li>
+                                <li>- Aceptamos Tarjeta, PayPal y Transferencia.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <button class="add-to-cart-btn" id="add-to-cart-detail-btn">Añadir al Carrito</button>
+                </div>
+            </div>
         </div>
-    </main>
 
-    <footer>
-        <p>© 2023 Mi Tienda Increíble</p>
-    </footer>
+    </div>
 
-    <!-- ================== SCRIPT JAVASCRIPT ================== -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
+<script>
+document.addEventListener('DOMContentLoaded', () => {
 
-            // --- DATOS DE EJEMPLO (luego vendrán de Google Sheets) ---
-            const mockProducts = [
-                { id: 'prod_001', nombre: 'Camiseta Cósmica', precio: 25.00, imagen_url: 'https://images.unsplash.com/photo-1503341504253-dff4815485f1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80', stock: 10 },
-                { id: 'prod_002', nombre: 'Pantalón Urbano', precio: 45.00, imagen_url: 'https://images.unsplash.com/photo-1604176354204-9268737828e4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80', stock: 5 },
-                { id: 'prod_003', nombre: 'Zapatillas Vulcan', precio: 75.50, imagen_url: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80', stock: 8 },
-                { id: 'prod_004', nombre: 'Gorra Minimalista', precio: 18.00, imagen_url: 'https://images.unsplash.com/photo-1588850561407-ed724b1ae3b6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80', stock: 12 }
-            ];
+    // --- CONFIGURACIÓN Y URLs ---
+    const googleSheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=0&single=true&output=csv';
 
-            // --- CARRITO DE COMPRAS (usando localStorage para que los datos no se pierdan al recargar) ---
-            let cart = JSON.parse(localStorage.getItem('shoppingCart')) || [];
+    // --- ESTADO DE LA APLICACIÓN ---
+    let allProducts = [];
+    let cart = JSON.parse(localStorage.getItem('beOriginalFitCart')) || [];
 
-            // --- ELEMENTOS DEL DOM ---
-            const productListContainer = document.getElementById('product-list');
-            const cartCounter = document.getElementById('cart-counter');
+    // --- SELECTORES DEL DOM ---
+    const catalogView = document.getElementById('catalog-view');
+    const productDetailView = document.getElementById('product-detail-view');
+    const productGrid = document.getElementById('product-grid');
+    const cartCounter = document.getElementById('cart-counter');
+    const backToCatalogBtn = document.getElementById('back-to-catalog-btn');
+    
+    // Elementos de la vista de detalle
+    const detailImage = document.getElementById('detail-image');
+    const detailName = document.getElementById('detail-name');
+    const detailPrice = document.getElementById('detail-price');
+    const detailDescription = document.getElementById('detail-description');
+    const addToCartDetailBtn = document.getElementById('add-to-cart-detail-btn');
+    
+    // --- LÓGICA DE CARGA DE DATOS ---
 
-            /**
-             * Dibuja los productos en la página.
-             * Por ahora usa los datos de `mockProducts`.
-             */
-            function renderProducts() {
-                productListContainer.innerHTML = ''; // Limpiar el contenedor antes de dibujar
-                mockProducts.forEach(product => {
-                    if (product.stock > 0) { // Solo mostrar productos con stock
-                        const productCard = `
-                            <div class="product" id="product-${product.id}">
-                                <img src="${product.imagen_url}" alt="${product.nombre}">
-                                <h3>${product.nombre}</h3>
-                                <p class="price">$${product.precio.toFixed(2)}</p>
-                                <button onclick="app.addToCart('${product.id}')">Añadir al carrito</button>
-                            </div>
-                        `;
-                        productListContainer.innerHTML += productCard;
-                    }
-                });
+    const parseCSV = (csvText) => {
+        const lines = csvText.split(/\r?\n/);
+        const headers = lines[0].split(',');
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i]) continue;
+            const values = lines[i].split(',');
+            const rowObject = {};
+            for (let j = 0; j < headers.length; j++) {
+                rowObject[headers[j].trim()] = values[j] ? values[j].trim() : '';
             }
+            rows.push(rowObject);
+        }
+        return rows;
+    };
 
-            /**
-             * Añade un producto al carrito o incrementa su cantidad.
-             * @param {string} productId - El ID del producto a añadir.
-             */
-            function addToCart(productId) {
-                const productInCart = cart.find(item => item.id === productId);
+    async function loadProductsData() {
+        try {
+            const response = await fetch(googleSheetCsvUrl, { cache: 'reload' });
+            if (!response.ok) throw new Error(`Error de red: ${response.status}`);
+            const csvText = await response.text();
+            const parsedData = parseCSV(csvText);
 
-                if (productInCart) {
-                    productInCart.quantity++;
-                } else {
-                    cart.push({ id: productId, quantity: 1 });
-                }
-                
-                updateCart();
+            // Validación de productos
+            allProducts = parsedData.filter(p => 
+                p.id && p.nombre && p.precio && p.imagen_url && p.stock
+            );
+
+            if (allProducts.length === 0) {
+                productGrid.innerHTML = '<p>No hay productos disponibles en este momento.</p>';
+                return;
             }
+            renderCatalog();
 
-            /**
-             * Actualiza el contador del carrito en la UI y guarda en localStorage.
-             */
-            function updateCart() {
-                const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-                cartCounter.textContent = totalItems;
-                localStorage.setItem('shoppingCart', JSON.stringify(cart));
-            }
-            
-            // --- Hacemos las funciones globales ---
-            // Para que el `onclick` del botón pueda acceder a ellas, las adjuntamos a un objeto global.
-            window.app = {
-                addToCart: addToCart
-            };
+        } catch (error) {
+            console.error('Error al cargar los productos:', error);
+            productGrid.innerHTML = `<p>Ocurrió un error al cargar el catálogo. Inténtalo más tarde.</p>`;
+        }
+    }
 
-            // --- INICIALIZACIÓN ---
-            // Renderizamos los productos y actualizamos el carrito al cargar la página.
-            renderProducts();
-            updateCart();
+    // --- LÓGICA DE RENDERIZADO ---
+
+    function renderCatalog() {
+        productGrid.innerHTML = ''; // Limpiar spinner
+        allProducts.forEach(product => {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.dataset.id = product.id; // Guardamos el ID para saber cuál se clickeó
+
+            card.innerHTML = `
+                <img src="${product.imagen_url}" alt="${product.nombre}" loading="lazy">
+                <div class="product-card-info">
+                    <h3>${product.nombre}</h3>
+                    <p class="price">$${parseFloat(product.precio).toFixed(2)}</p>
+                </div>
+            `;
+            productGrid.appendChild(card);
         });
-    </script>
+    }
+
+    function displayProductDetail(productId) {
+        const product = allProducts.find(p => p.id === productId);
+        if (!product) return;
+
+        // Poblar la vista de detalle
+        detailImage.src = product.imagen_url;
+        detailImage.alt = product.nombre;
+        detailName.textContent = product.nombre;
+        detailPrice.textContent = `$${parseFloat(product.precio).toFixed(2)}`;
+        detailDescription.textContent = product.descripcion || 'Próximamente más detalles sobre este increíble producto.'; // Usa la descripción o un texto por defecto
+        addToCartDetailBtn.dataset.id = product.id; // Asigna el ID al botón
+
+        // Cambiar de vista
+        catalogView.classList.add('is-hidden');
+        productDetailView.classList.remove('is-hidden');
+        window.scrollTo(0, 0);
+
+        // Actualizar historial del navegador para el botón "atrás"
+        history.pushState({ productId: productId }, product.nombre, `#product/${product.id}`);
+    }
+
+    function closeProductDetail() {
+        productDetailView.classList.add('is-hidden');
+        catalogView.classList.remove('is-hidden');
+    }
+
+    // --- LÓGICA DEL CARRITO ---
+
+    function addToCart(productId) {
+        const productInCart = cart.find(item => item.id === productId);
+
+        if (productInCart) {
+            productInCart.quantity++;
+        } else {
+            cart.push({ id: productId, quantity: 1 });
+        }
+        updateCartCounter();
+        saveCart();
+        // Opcional: mostrar una pequeña notificación
+        console.log(`Producto ${productId} añadido al carrito. Carrito:`, cart);
+    }
+
+    function updateCartCounter() {
+        const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+        cartCounter.textContent = totalItems;
+    }
+
+    function saveCart() {
+        localStorage.setItem('beOriginalFitCart', JSON.stringify(cart));
+    }
+
+    // --- MANEJADORES DE EVENTOS ---
+
+    // Evento para abrir el detalle del producto
+    productGrid.addEventListener('click', (e) => {
+        const card = e.target.closest('.product-card');
+        if (card && card.dataset.id) {
+            displayProductDetail(card.dataset.id);
+        }
+    });
+
+    // Evento para el botón "Añadir al carrito" en la vista de detalle
+    addToCartDetailBtn.addEventListener('click', (e) => {
+        const productId = e.target.dataset.id;
+        if (productId) {
+            addToCart(productId);
+        }
+    });
+
+    // Evento para el botón de volver
+    backToCatalogBtn.addEventListener('click', () => {
+        history.back(); // Esto activará el evento 'popstate'
+    });
+    
+    // Manejar el botón "atrás" del navegador
+    window.addEventListener('popstate', () => {
+        // Si el hash no existe, significa que estamos volviendo al catálogo
+        if (!location.hash.includes('#product/')) {
+            closeProductDetail();
+        }
+    });
+
+    // --- INICIALIZACIÓN ---
+    loadProductsData();
+    updateCartCounter(); // Actualiza el contador al cargar la página
+});
+</script>
 </body>
 </html>
