@@ -5,24 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BeOriginalFit</title>
     
-    <!-- Puedes añadir tu favicon aquí si tienes uno -->
-    <!-- <link rel="icon" type="image/png" href="./assets/img/logo.png"> -->
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* ================== ESTILOS GENERALES Y VARIABLES ================== */
         :root {
             --background-color: #121212;
             --surface-color: #1e1e1e;
-            --primary-color: #03dac6; /* Un color de acento vibrante */
+            --primary-color: #03dac6;
             --text-color: #e0e0e0;
             --secondary-text-color: #a0a0a0;
             --border-color: #333333;
+            --error-color: #cf6679;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
         body { 
@@ -32,248 +28,43 @@
             min-height: 100vh;
         }
         
-        /* ================== ESTRUCTURA Y VISTAS ================== */
-        .page-wrapper {
-            position: relative;
-            overflow-x: hidden;
-        }
-
-        .view-container {
-            width: 100%;
-            min-height: 100vh;
-            padding: 20px;
-            opacity: 1;
-            visibility: visible;
-            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
-        .view-container.is-hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            transform: translateX(20px);
-        }
+        .page-wrapper { position: relative; overflow-x: hidden; }
+        .view-container { width: 100%; min-height: 100vh; padding: 20px; opacity: 1; visibility: visible; transition: opacity 0.5s ease-out, transform 0.5s ease-out; position: absolute; top: 0; left: 0; }
+        .view-container.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; transform: translateX(20px); }
+        #product-detail-view.is-hidden { transform: translateX(-20px); }
         
-        #product-detail-view.is-hidden {
-            transform: translateX(-20px);
-        }
+        .main-header { background-color: rgba(30, 30, 30, 0.8); backdrop-filter: blur(10px); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border-color); }
+        .main-header .title { font-size: 1.5rem; font-weight: 700; letter-spacing: 1px; }
+        .cart-icon-container { position: relative; }
+        #cart-icon { width: 30px; height: 30px; stroke: var(--primary-color); fill: none; }
+        #cart-counter { position: absolute; top: -8px; right: -12px; background-color: var(--primary-color); color: var(--background-color); border-radius: 50%; padding: 2px 6px; font-size: 12px; font-weight: bold; border: 2px solid var(--background-color); }
+
+        #catalog-view main { max-width: 1200px; margin: 2rem auto; }
+        #product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 25px; }
+        .product-card { background-color: var(--surface-color); border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease; border: 1px solid var(--border-color); }
+        .product-card:hover { transform: translateY(-8px); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); }
+        .product-card img { width: 100%; height: 350px; object-fit: cover; display: block; background-color: #333; }
+        .product-card-info { padding: 15px; text-align: center; }
+        .product-card-info h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .product-card-info .price { font-size: 1rem; color: var(--primary-color); font-weight: 700; }
         
-        /* ================== HEADER Y CARRITO ================== */
-        .main-header {
-            background-color: rgba(30, 30, 30, 0.8);
-            backdrop-filter: blur(10px);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .main-header .title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-        }
+        .back-button { position: absolute; top: 30px; left: 30px; background: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-color); font-size: 1.5rem; cursor: pointer; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background-color 0.3s, transform 0.3s; z-index: 10; }
+        .back-button:hover { background-color: var(--primary-color); color: var(--background-color); transform: scale(1.1); }
+        .product-detail-container { display: flex; max-width: 1100px; margin: 50px auto; background-color: var(--surface-color); border-radius: 15px; overflow: hidden; border: 1px solid var(--border-color); }
+        .detail-image-container { flex: 1 1 50%; }
+        .detail-image-container img { width: 100%; height: 100%; object-fit: cover; background-color: #333; }
+        .detail-info-container { flex: 1 1 50%; padding: 40px; display: flex; flex-direction: column; }
+        .detail-info-container h2 { font-size: 2.5rem; font-weight: 700; margin-bottom: 10px; }
+        .detail-info-container .price-tag { font-size: 2rem; color: var(--primary-color); font-weight: 700; margin-bottom: 20px; }
+        .detail-info-container .description { font-size: 1rem; line-height: 1.7; color: var(--secondary-text-color); margin-bottom: 30px; flex-grow: 1; }
+        .detail-options .option-group { margin-bottom: 20px; }
+        .detail-options h4 { font-size: 1rem; font-weight: 600; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
+        .detail-options p, .detail-options ul { font-size: 0.9rem; color: var(--secondary-text-color); list-style: none; }
+        .add-to-cart-btn { background-color: var(--primary-color); color: var(--background-color); border: none; padding: 15px 30px; border-radius: 8px; cursor: pointer; font-size: 1.1rem; font-weight: 700; width: 100%; text-transform: uppercase; transition: transform 0.2s, box-shadow 0.2s; }
+        .add-to-cart-btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(3, 218, 198, 0.2); }
         
-        .cart-icon-container {
-            position: relative;
-        }
-
-        #cart-icon {
-            width: 30px;
-            height: 30px;
-            stroke: var(--primary-color);
-            fill: none;
-        }
-
-        #cart-counter {
-            position: absolute;
-            top: -8px;
-            right: -12px;
-            background-color: var(--primary-color);
-            color: var(--background-color);
-            border-radius: 50%;
-            padding: 2px 6px;
-            font-size: 12px;
-            font-weight: bold;
-            border: 2px solid var(--background-color);
-        }
-
-        /* ================== VISTA DE CATÁLOGO ================== */
-        #catalog-view main {
-            max-width: 1200px;
-            margin: 2rem auto;
-        }
-
-        #product-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 25px;
-        }
-
-        .product-card {
-            background-color: var(--surface-color);
-            border-radius: 12px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 1px solid var(--border-color);
-        }
-
-        .product-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-        }
-
-        .product-card img {
-            width: 100%;
-            height: 350px; /* Altura fija para uniformidad */
-            object-fit: cover;
-            display: block;
-        }
-
-        .product-card-info {
-            padding: 15px;
-            text-align: center;
-        }
-        
-        .product-card-info h3 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .product-card-info .price {
-            font-size: 1rem;
-            color: var(--primary-color);
-            font-weight: 700;
-        }
-        
-        /* ================== VISTA DE DETALLE DE PRODUCTO ================== */
-        #product-detail-view {
-            padding-top: 50px;
-        }
-        
-        .back-button {
-            position: absolute;
-            top: 30px;
-            left: 30px;
-            background: var(--surface-color);
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            font-size: 1.5rem;
-            cursor: pointer;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.3s, transform 0.3s;
-            z-index: 10;
-        }
-
-        .back-button:hover {
-            background-color: var(--primary-color);
-            color: var(--background-color);
-            transform: scale(1.1);
-        }
-
-        .product-detail-container {
-            display: flex;
-            max-width: 1100px;
-            margin: auto;
-            background-color: var(--surface-color);
-            border-radius: 15px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-
-        .detail-image-container {
-            flex: 1 1 50%;
-        }
-
-        .detail-image-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .detail-info-container {
-            flex: 1 1 50%;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .detail-info-container h2 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-        
-        .detail-info-container .price-tag {
-            font-size: 2rem;
-            color: var(--primary-color);
-            font-weight: 700;
-            margin-bottom: 20px;
-        }
-        
-        .detail-info-container .description {
-            font-size: 1rem;
-            line-height: 1.7;
-            color: var(--secondary-text-color);
-            margin-bottom: 30px;
-            flex-grow: 1;
-        }
-        
-        .detail-options .option-group {
-            margin-bottom: 20px;
-        }
-
-        .detail-options h4 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 5px;
-        }
-        
-        .detail-options p, .detail-options ul {
-            font-size: 0.9rem;
-            color: var(--secondary-text-color);
-            list-style: none;
-        }
-
-        .add-to-cart-btn {
-            background-color: var(--primary-color);
-            color: var(--background-color);
-            border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1.1rem;
-            font-weight: 700;
-            width: 100%;
-            text-transform: uppercase;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .add-to-cart-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(3, 218, 198, 0.2);
-        }
-
-        /* ================== SPINNER Y RESPONSIVE ================== */
+        .message-container { text-align: center; padding: 40px; color: var(--secondary-text-color); }
+        .message-container.error { color: var(--error-color); }
         .spinner { display: block; margin: 100px auto; width: 50px; height: 50px; border: 5px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -283,7 +74,6 @@
             .detail-info-container h2 { font-size: 2rem; }
             .detail-info-container .price-tag { font-size: 1.5rem; }
         }
-
         @media (max-width: 480px) {
             #product-grid { gap: 15px; }
             .main-header { padding: 1rem; }
@@ -293,135 +83,106 @@
 </head>
 <body>
     <div class="page-wrapper">
-
-        <!-- ======================= VISTA CATÁLOGO ======================= -->
         <div id="catalog-view" class="view-container">
             <header class="main-header">
                 <h1 class="title">BeOriginalFit</h1>
                 <div class="cart-icon-container">
-                    <svg id="cart-icon" viewBox="0 0 24 24" stroke-width="1.5">
-                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                    </svg>
+                    <svg id="cart-icon" viewBox="0 0 24 24" stroke-width="1.5"><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
                     <span id="cart-counter">0</span>
                 </div>
             </header>
             <main>
-                <div id="product-grid">
-                    <div class="spinner"></div>
-                </div>
+                <div id="product-grid"><div class="spinner"></div></div>
             </main>
         </div>
-
-        <!-- ======================= VISTA DETALLE DE PRODUCTO ======================= -->
         <div id="product-detail-view" class="view-container is-hidden">
-            <button class="back-button" id="back-to-catalog-btn" aria-label="Volver al catálogo">
-                &larr;
-            </button>
+            <button class="back-button" id="back-to-catalog-btn" aria-label="Volver al catálogo">&larr;</button>
             <div class="product-detail-container">
-                <div class="detail-image-container">
-                    <img id="detail-image" src="" alt="Imagen del producto">
-                </div>
+                <div class="detail-image-container"><img id="detail-image" src="" alt="Imagen del producto"></div>
                 <div class="detail-info-container">
                     <h2 id="detail-name"></h2>
                     <p class="price-tag" id="detail-price"></p>
                     <p class="description" id="detail-description"></p>
-                    
                     <div class="detail-options">
-                        <div class="option-group">
-                            <h4>Colores Disponibles</h4>
-                            <p>Negro, Blanco, Gris (próximamente más)</p>
-                        </div>
-                        <div class="option-group">
-                            <h4>Envíos y Pagos</h4>
-                            <ul>
-                                <li>- Envío estándar (3-5 días hábiles)</li>
-                                <li>- Aceptamos Tarjeta, PayPal y Transferencia.</li>
-                            </ul>
-                        </div>
+                        <div class="option-group"><h4>Colores Disponibles</h4><p>Negro, Blanco, Gris (próximamente más)</p></div>
+                        <div class="option-group"><h4>Envíos y Pagos</h4><ul><li>- Envío estándar (3-5 días hábiles)</li><li>- Aceptamos Tarjeta, PayPal y Transferencia.</li></ul></div>
                     </div>
-                    
                     <button class="add-to-cart-btn" id="add-to-cart-detail-btn">Añadir al Carrito</button>
                 </div>
             </div>
         </div>
-
     </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- CONFIGURACIÓN Y URLs ---
     const googleSheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=0&single=true&output=csv';
-
-    // --- ESTADO DE LA APLICACIÓN ---
     let allProducts = [];
     let cart = JSON.parse(localStorage.getItem('beOriginalFitCart')) || [];
 
-    // --- SELECTORES DEL DOM ---
     const catalogView = document.getElementById('catalog-view');
     const productDetailView = document.getElementById('product-detail-view');
     const productGrid = document.getElementById('product-grid');
     const cartCounter = document.getElementById('cart-counter');
     const backToCatalogBtn = document.getElementById('back-to-catalog-btn');
-    
-    // Elementos de la vista de detalle
     const detailImage = document.getElementById('detail-image');
     const detailName = document.getElementById('detail-name');
     const detailPrice = document.getElementById('detail-price');
     const detailDescription = document.getElementById('detail-description');
     const addToCartDetailBtn = document.getElementById('add-to-cart-detail-btn');
-    
-    // --- LÓGICA DE CARGA DE DATOS ---
 
-    const parseCSV = (csvText) => {
-        const lines = csvText.split(/\r?\n/);
-        const headers = lines[0].split(',');
-        const rows = [];
-        for (let i = 1; i < lines.length; i++) {
-            if (!lines[i]) continue;
-            const values = lines[i].split(',');
-            const rowObject = {};
-            for (let j = 0; j < headers.length; j++) {
-                rowObject[headers[j].trim()] = values[j] ? values[j].trim() : '';
-            }
-            rows.push(rowObject);
-        }
-        return rows;
-    };
+    /**
+     * <!-- CAMBIO CLAVE: Parser de CSV mucho más robusto -->
+     * Esta función maneja correctamente comas y otros caracteres dentro de los campos.
+     */
+    function parseCSV(csvText) {
+        const lines = csvText.split('\n');
+        const headers = lines[0].trim().split(',');
+        return lines.slice(1).map(line => {
+            const data = line.trim().split(',');
+            return headers.reduce((obj, header, i) => {
+                obj[header.trim()] = data[i] ? data[i].trim() : '';
+                return obj;
+            }, {});
+        });
+    }
 
     async function loadProductsData() {
         try {
-            const response = await fetch(googleSheetCsvUrl, { cache: 'reload' });
-            if (!response.ok) throw new Error(`Error de red: ${response.status}`);
+            const response = await fetch(googleSheetCsvUrl, { cache: 'no-cache' });
+            if (!response.ok) throw new Error(`Error de red: ${response.statusText}`);
             const csvText = await response.text();
+            
+            // <!-- CAMBIO CLAVE: Verificación de que el CSV no esté vacío -->
+            if (!csvText || csvText.trim().length === 0) {
+                throw new Error("El archivo CSV de Google Sheets está vacío o no se pudo cargar.");
+            }
+
             const parsedData = parseCSV(csvText);
 
-            // Validación de productos
             allProducts = parsedData.filter(p => 
                 p.id && p.nombre && p.precio && p.imagen_url && p.stock
             );
 
             if (allProducts.length === 0) {
-                productGrid.innerHTML = '<p>No hay productos disponibles en este momento.</p>';
+                productGrid.innerHTML = '<div class="message-container">No se encontraron productos válidos. Revisa tu Google Sheet.</div>';
                 return;
             }
             renderCatalog();
 
         } catch (error) {
             console.error('Error al cargar los productos:', error);
-            productGrid.innerHTML = `<p>Ocurrió un error al cargar el catálogo. Inténtalo más tarde.</p>`;
+            // <!-- CAMBIO CLAVE: Mensaje de error más visible para el usuario -->
+            productGrid.innerHTML = `<div class="message-container error"><h3>Error al Cargar Catálogo</h3><p>${error.message}</p></div>`;
         }
     }
 
-    // --- LÓGICA DE RENDERIZADO ---
-
     function renderCatalog() {
-        productGrid.innerHTML = ''; // Limpiar spinner
+        productGrid.innerHTML = '';
         allProducts.forEach(product => {
             const card = document.createElement('div');
             card.className = 'product-card';
-            card.dataset.id = product.id; // Guardamos el ID para saber cuál se clickeó
-
+            card.dataset.id = product.id;
             card.innerHTML = `
                 <img src="${product.imagen_url}" alt="${product.nombre}" loading="lazy">
                 <div class="product-card-info">
@@ -436,21 +197,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function displayProductDetail(productId) {
         const product = allProducts.find(p => p.id === productId);
         if (!product) return;
-
-        // Poblar la vista de detalle
         detailImage.src = product.imagen_url;
         detailImage.alt = product.nombre;
         detailName.textContent = product.nombre;
         detailPrice.textContent = `$${parseFloat(product.precio).toFixed(2)}`;
-        detailDescription.textContent = product.descripcion || 'Próximamente más detalles sobre este increíble producto.'; // Usa la descripción o un texto por defecto
-        addToCartDetailBtn.dataset.id = product.id; // Asigna el ID al botón
-
-        // Cambiar de vista
+        detailDescription.textContent = product.descripcion || 'Próximamente más detalles sobre este increíble producto.';
+        addToCartDetailBtn.dataset.id = product.id;
         catalogView.classList.add('is-hidden');
         productDetailView.classList.remove('is-hidden');
         window.scrollTo(0, 0);
-
-        // Actualizar historial del navegador para el botón "atrás"
         history.pushState({ productId: productId }, product.nombre, `#product/${product.id}`);
     }
 
@@ -459,20 +214,12 @@ document.addEventListener('DOMContentLoaded', () => {
         catalogView.classList.remove('is-hidden');
     }
 
-    // --- LÓGICA DEL CARRITO ---
-
     function addToCart(productId) {
         const productInCart = cart.find(item => item.id === productId);
-
-        if (productInCart) {
-            productInCart.quantity++;
-        } else {
-            cart.push({ id: productId, quantity: 1 });
-        }
+        if (productInCart) productInCart.quantity++;
+        else cart.push({ id: productId, quantity: 1 });
         updateCartCounter();
         saveCart();
-        // Opcional: mostrar una pequeña notificación
-        console.log(`Producto ${productId} añadido al carrito. Carrito:`, cart);
     }
 
     function updateCartCounter() {
@@ -484,40 +231,20 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('beOriginalFitCart', JSON.stringify(cart));
     }
 
-    // --- MANEJADORES DE EVENTOS ---
-
-    // Evento para abrir el detalle del producto
-    productGrid.addEventListener('click', (e) => {
+    productGrid.addEventListener('click', e => {
         const card = e.target.closest('.product-card');
-        if (card && card.dataset.id) {
-            displayProductDetail(card.dataset.id);
-        }
+        if (card && card.dataset.id) displayProductDetail(card.dataset.id);
     });
-
-    // Evento para el botón "Añadir al carrito" en la vista de detalle
-    addToCartDetailBtn.addEventListener('click', (e) => {
-        const productId = e.target.dataset.id;
-        if (productId) {
-            addToCart(productId);
-        }
+    addToCartDetailBtn.addEventListener('click', e => {
+        if (e.target.dataset.id) addToCart(e.target.dataset.id);
     });
-
-    // Evento para el botón de volver
-    backToCatalogBtn.addEventListener('click', () => {
-        history.back(); // Esto activará el evento 'popstate'
-    });
-    
-    // Manejar el botón "atrás" del navegador
+    backToCatalogBtn.addEventListener('click', () => history.back());
     window.addEventListener('popstate', () => {
-        // Si el hash no existe, significa que estamos volviendo al catálogo
-        if (!location.hash.includes('#product/')) {
-            closeProductDetail();
-        }
+        if (!location.hash.includes('#product/')) closeProductDetail();
     });
 
-    // --- INICIALIZACIÓN ---
     loadProductsData();
-    updateCartCounter(); // Actualiza el contador al cargar la página
+    updateCartCounter();
 });
 </script>
 </body>
