@@ -115,17 +115,17 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // URL CORRECTA, proporcionada por ti. ¡Con esta funcionará!
+
+    // URL CORRECTA, la que me proporcionaste.
     const googleSheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=0&single=true&output=csv';
 
     let allProducts = [];
     let cart = JSON.parse(localStorage.getItem('beOriginalFitCart')) || [];
 
-    // ... (El resto del script es idéntico y no necesita cambios) ...
     const catalogView = document.getElementById('catalog-view');
     const productDetailView = document.getElementById('product-detail-view');
     const productGrid = document.getElementById('product-grid');
+    // ...el resto de los selectores del DOM
     const cartCounter = document.getElementById('cart-counter');
     const backToCatalogBtn = document.getElementById('back-to-catalog-btn');
     const detailImage = document.getElementById('detail-image');
@@ -134,16 +134,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const detailDescription = document.getElementById('detail-description');
     const addToCartDetailBtn = document.getElementById('add-to-cart-detail-btn');
 
+
+    /**
+     * Parsea texto CSV a un array de objetos.
+     * Esta versión es más robusta.
+     */
     function parseCSV(csvText) {
-        const lines = csvText.trim().split('\n');
-        const headers = lines[0].trim().split(',').map(h => h.trim());
+        const lines = csvText.trim().split(/\r?\n/);
+        if (lines.length < 2) return [];
+
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        
         return lines.slice(1).map(line => {
-            const data = line.trim().split(',');
+            if (!line.trim()) return null;
+            const data = line.split(',');
             return headers.reduce((obj, header, i) => {
                 obj[header] = data[i] ? data[i].trim() : '';
                 return obj;
             }, {});
-        });
+        }).filter(Boolean); // Filtra las líneas vacías
     }
 
     async function loadProductsData() {
@@ -156,15 +165,30 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!csvText || csvText.trim().length === 0) {
                 throw new Error("El archivo CSV de Google Sheets está vacío o no se pudo cargar.");
             }
+            
             const parsedData = parseCSV(csvText);
-            allProducts = parsedData.filter(p => 
-                p.id && p.nombre && p.precio && p.imagen_url && p.stock
-            );
+            
+            // Proceso de validación con diagnóstico en la consola
+            const requiredFields = ['id', 'nombre', 'precio', 'imagen_url', 'stock'];
+            const validatedProducts = [];
+
+            parsedData.forEach((product, index) => {
+                const missingFields = requiredFields.filter(field => !product[field]);
+                if (missingFields.length > 0) {
+                    console.warn(`Producto en fila ${index + 2} rechazado. Faltan los campos: ${missingFields.join(', ')}`);
+                } else {
+                    validatedProducts.push(product);
+                }
+            });
+
+            allProducts = validatedProducts;
+            
             if (allProducts.length === 0) {
-                productGrid.innerHTML = '<div class="message-container">No se encontraron productos válidos. Revisa tu Google Sheet y asegúrate de que los encabezados (id, nombre, precio, etc.) coincidan exactamente.</div>';
+                productGrid.innerHTML = '<div class="message-container">No se encontraron productos válidos. Revisa la consola (F12) para ver por qué se rechazaron los productos de tu Google Sheet.</div>';
                 return;
             }
             renderCatalog();
+
         } catch (error) {
             console.error('❌ ERROR CRÍTICO:', error);
             productGrid.innerHTML = `<div class="message-container error"><h3>Error al Cargar Catálogo</h3><p>${error.message}</p></div>`;
