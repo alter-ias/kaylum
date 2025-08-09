@@ -64,7 +64,7 @@
         .add-to-cart-btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(3, 218, 198, 0.2); }
         
         .message-container { text-align: center; padding: 40px; color: var(--secondary-text-color); }
-        .message-container.error { color: var(--error-color); }
+        .message-container.error { color: var(--error-color); background-color: rgba(207, 102, 121, 0.1); border: 1px solid var(--error-color); border-radius: 8px; padding: 20px; }
         .spinner { display: block; margin: 100px auto; width: 50px; height: 50px; border: 5px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -116,7 +116,9 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-    const googleSheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=0&single=true&output=csv';
+    // URL CORRECTA, OBTENIDA DIRECTAMENTE DE LA PUBLICACIÓN DE TU HOJA
+    const googleSheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQYxH4687R-wV-pUfS7wW-RkKDT5sH7V7tFfA_M-P0A9n29G1zJ6c92wD4cO08vD_tS99Jc/pub?gid=0&single=true&output=csv';
+
     let allProducts = [];
     let cart = JSON.parse(localStorage.getItem('beOriginalFitCart')) || [];
 
@@ -131,17 +133,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const detailDescription = document.getElementById('detail-description');
     const addToCartDetailBtn = document.getElementById('add-to-cart-detail-btn');
 
-    /**
-     * <!-- CAMBIO CLAVE: Parser de CSV mucho más robusto -->
-     * Esta función maneja correctamente comas y otros caracteres dentro de los campos.
-     */
     function parseCSV(csvText) {
-        const lines = csvText.split('\n');
-        const headers = lines[0].trim().split(',');
+        const lines = csvText.trim().split('\n');
+        const headers = lines[0].trim().split(',').map(h => h.trim());
         return lines.slice(1).map(line => {
             const data = line.trim().split(',');
             return headers.reduce((obj, header, i) => {
-                obj[header.trim()] = data[i] ? data[i].trim() : '';
+                obj[header] = data[i] ? data[i].trim() : '';
                 return obj;
             }, {});
         });
@@ -150,29 +148,24 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadProductsData() {
         try {
             const response = await fetch(googleSheetCsvUrl, { cache: 'no-cache' });
-            if (!response.ok) throw new Error(`Error de red: ${response.statusText}`);
+            if (!response.ok) {
+                throw new Error(`Error de red al obtener los datos: ${response.status} ${response.statusText}`);
+            }
             const csvText = await response.text();
-            
-            // <!-- CAMBIO CLAVE: Verificación de que el CSV no esté vacío -->
             if (!csvText || csvText.trim().length === 0) {
                 throw new Error("El archivo CSV de Google Sheets está vacío o no se pudo cargar.");
             }
-
             const parsedData = parseCSV(csvText);
-
             allProducts = parsedData.filter(p => 
                 p.id && p.nombre && p.precio && p.imagen_url && p.stock
             );
-
             if (allProducts.length === 0) {
-                productGrid.innerHTML = '<div class="message-container">No se encontraron productos válidos. Revisa tu Google Sheet.</div>';
+                productGrid.innerHTML = '<div class="message-container">No se encontraron productos válidos. Revisa tu Google Sheet y asegúrate de que los encabezados (id, nombre, precio, etc.) coincidan exactamente.</div>';
                 return;
             }
             renderCatalog();
-
         } catch (error) {
-            console.error('Error al cargar los productos:', error);
-            // <!-- CAMBIO CLAVE: Mensaje de error más visible para el usuario -->
+            console.error('❌ ERROR CRÍTICO:', error);
             productGrid.innerHTML = `<div class="message-container error"><h3>Error al Cargar Catálogo</h3><p>${error.message}</p></div>`;
         }
     }
