@@ -131,9 +131,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     const googleSheetUrls = {
         products: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=0&single=true&output=csv',
-        dieta: 'URL_DE_TU_HOJA_DIETA_AQUI',
-        rutinas: 'URL_DE_TU_HOJA_RUTINAS_AQUI',
-        consejos: 'URL_DE_TU_HOJA_CONSEJOS_AQUI'
+        dieta: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=1621508657&single=true&output=csv',
+        rutinas: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=1898682901&single=true&output=csv',
+        consejos: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=1863005305&single=true&output=csv'
     };
     let allData = { products: [], dieta: [], rutinas: [], consejos: [] }, cart = JSON.parse(localStorage.getItem('beOriginalFitCart')) || [];
     const views = { catalog: document.getElementById('catalog-view'), detail: document.getElementById('product-detail-view'), cart: document.getElementById('cart-view'), terms: document.getElementById('terms-view'), 'vida-saludable': document.getElementById('vida-saludable-view'), contacto: document.getElementById('contacto-view'), dieta: document.getElementById('dieta-view'), rutinas: document.getElementById('rutinas-view'), consejos: document.getElementById('consejos-view') };
