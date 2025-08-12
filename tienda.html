@@ -77,9 +77,15 @@
         .checkout-btn, .secondary-btn { width: 100%; padding: 15px; border-radius: 30px; font-size: 1rem; font-weight: 600; cursor: pointer; border: 2px solid var(--primary-color); transition: all 0.3s; }
         .checkout-btn { background-color: var(--primary-color); color: var(--background-color); }
         .secondary-btn { background-color: transparent; color: var(--primary-color); }
-        .hub-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; text-align: center; }
-        .hub-card { background-color: var(--background-color); padding: 40px 20px; border-radius: 10px; cursor: pointer; transition: transform 0.3s; }
-        .hub-card:hover { transform: scale(1.05); }
+        
+        /* --- ESTILOS MEJORADOS PARA LA SECCIÓN "VIDA SALUDABLE" --- */
+        #vida-saludable-view main { max-width: 1100px; } /* Más ancho para mejor distribución */
+        .hub-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; }
+        .hub-card { position: relative; aspect-ratio: 4 / 5; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.3s ease; }
+        .hub-card:hover { transform: translateY(-10px); }
+        .hub-card img { width: 100%; height: 100%; object-fit: cover; }
+        .hub-card h3 { position: absolute; bottom: 20px; left: 20px; font-size: 1.8rem; color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.7); }
+        
         .post-card { border-bottom: 1px solid var(--border-color); padding-bottom: 30px; margin-bottom: 30px; }
         .post-card:last-child { border-bottom: none; margin-bottom: 0; }
         .post-card img { width: 100%; height: 225px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem; }
@@ -122,7 +128,29 @@
         <div id="catalog-view" class="view-container"><main><div id="product-grid"><div class="spinner"></div></div></main></div>
         <div id="product-detail-view" class="view-container is-hidden"><main><div class="product-detail-container"></div></main></div>
         <div id="cart-view" class="view-container is-hidden"><main><h2 class="main-view-title">Tu Carrito</h2><div id="cart-items-container"></div><div id="cart-summary"></div><div id="cart-empty-message" style="display: none;"><h3>Tu carrito está vacío</h3><p>Añade productos para verlos aquí.</p></div></main></div>
-        <div id="vida-saludable-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Vida Saludable</h2><div class="hub-grid"><div class="hub-card" data-view="dieta"><h3>Alimentación</h3></div><div class="hub-card" data-view="rutinas"><h3>Ejercicios</h3></div><div class="hub-card" data-view="consejos"><h3>Consejos</h3></div></div></main></div>
+        
+        <!-- SECCIÓN "VIDA SALUDABLE" CON NUEVO HTML Y ESTILOS -->
+        <div id="vida-saludable-view" class="view-container is-hidden">
+            <main>
+                <button class="back-button">&larr;</button>
+                <h2 class="main-view-title">Vida Saludable</h2>
+                <div class="hub-grid">
+                    <div class="hub-card" data-view="dieta">
+                        <img src="./assets/mayfit/img/dieta.png" alt="Alimentación">
+                        <h3>Alimentación</h3>
+                    </div>
+                    <div class="hub-card" data-view="rutinas">
+                        <img src="./assets/mayfit/img/rutina.png" alt="Ejercicios">
+                        <h3>Ejercicios</h3>
+                    </div>
+                    <div class="hub-card" data-view="consejos">
+                        <img src="./assets/mayfit/img/consejos.png" alt="Consejos">
+                        <h3>Consejos</h3>
+                    </div>
+                </div>
+            </main>
+        </div>
+        
         <div id="dieta-view" class="blog-view view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Alimentación</h2><div class="posts-container"></div></main></div>
         <div id="rutinas-view" class="blog-view view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Ejercicios</h2><div class="posts-container"></div></main></div>
         <div id="consejos-view" class="blog-view view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Consejos</h2><div class="posts-container"></div></main></div>
@@ -169,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadAllData(){try{const reqs=Object.entries(googleSheetUrls).map(([key,url])=>{if(url.startsWith('URL_DE'))return Promise.resolve({key,data:[]});return fetch(url,{cache:'no-cache'}).then(res=>res.text()).then(text=>({key,data:parseCSVWithMultiline(text)}))});const results=await Promise.all(reqs);results.forEach(({key,data})=>allData[key]=data);renderCatalog()}catch(err){productGrid.innerHTML=`Error: ${err.message}`}}
     function renderCatalog(filter = 'todos') { productGrid.innerHTML = ''; const productsToDisplay = filter === 'todos' ? allData.products : allData.products.filter(p => p.categoria && p.categoria.toLowerCase() === filter.toLowerCase()); productsToDisplay.forEach(p => { const card = document.createElement('div'); card.className = 'product-card'; card.dataset.id = p.id; card.innerHTML = `<div class="card-inner"><div class="card-face"><img src="${p.imagen_url}" alt="${p.nombre}"><div class="card-info-overlay"><h3>${p.nombre}</h3><p class="price">$${parseFloat(p.precio).toFixed(2)}</p></div><button class="quick-add-btn" data-id="${p.id}">+</button></div></div>`; productGrid.appendChild(card); }); }
     function renderProductDetail(productId) { const p = allData.products.find(prod => prod.id === productId); if (!p) return; let tallasHTML = ''; const tallas = (p.talla || '').split(',').map(t => t.trim()); if (tallas.length > 1 && tallas[0]) { tallasHTML = `<div class="size-selector"><h4>Talla:</h4><div class="size-buttons">${tallas.map((t, i) => `<button class="size-btn ${i === 0 ? 'selected' : ''}" data-size="${t}">${t}</button>`).join('')}</div></div>`; } else if (tallas[0]) { tallasHTML = `<div class="size-selector"><h4>Talla:</h4><p>${p.talla}</p></div>`; } productDetailContainer.innerHTML = `<div class="detail-image-container"><img src="${p.imagen_url}"></div><div class="detail-info-container"><h2>${p.nombre}</h2><p class="price-tag">$${parseFloat(p.precio).toFixed(2)}</p>${tallasHTML}<button class="add-to-cart-btn checkout-btn" data-id="${p.id}">Añadir al Carrito</button><p class="description" style="margin-top:1.5rem;">${p.descripcion||''}</p></div>`; }
-    function renderCart() { cartItemsContainer.innerHTML = ''; if (cart.length === 0) { cartEmptyMessage.style.display = 'block'; cartSummary.style.display = 'none'; } else { cartEmptyMessage.style.display = 'none'; cartSummary.style.display = 'block'; let total = 0; cart.forEach(item => { const p = allData.products.find(prod => prod.id === item.id); if (!p) return; const itemTotal = item.quantity * parseFloat(p.precio); total += itemTotal; const el = document.createElement('div'); el.className = 'cart-item'; el.innerHTML = `<img src="${p.imagen_url}" class="cart-item-img"><div class="cart-item-info"><h4>${p.nombre}</h4><p class="talla">Talla: ${item.size}</p></div><div class="cart-item-controls"><div class="quantity-control"><button class="quantity-btn" data-cart-item-id="${item.cartItemId}" data-change="-1">-</button><span>${item.quantity}</span><button class="quantity-btn" data-cart-item-id="${item.cartItemId}" data-change="1">+</button></div><p>$${itemTotal.toFixed(2)}</p><button class="remove-btn" data-cart-item-id="${item.cartItemId}">×</button></div>`; cartItemsContainer.appendChild(el); }); cartSummary.innerHTML = `<h3>Total: $${total.toFixed(2)}</h3><div class="cart-summary-actions"><button class="checkout-btn">Proceder al Pago</button><button class="secondary-btn back-button">Seguir Comprando</button></div>`; } updateCartCounter(); }
+    function renderCart() { cartItemsContainer.innerHTML = ''; if (cart.length === 0) { cartEmptyMessage.style.display = 'block'; cartSummary.style.display = 'none'; } else { cartEmptyMessage.style.display = 'none'; cartSummary.style.display = 'block'; let total = 0; cart.forEach(item => { const p = allData.products.find(prod => prod.id === item.id); if (!p) return; const itemTotal = item.quantity * parseFloat(p.precio); total += itemTotal; const el = document.createElement('div'); el.className = 'cart-item'; el.innerHTML = `<img src="${p.imagen_url}" class="cart-item-img"><div class="cart-item-info"><h4>${p.nombre}</h4><p class="talla">Talla: ${item.size}</p></div><div class="cart-item-controls"><div class="quantity-control"><button class="quantity-btn" data-cart-item-id="${item.cartItemId}" data-change="-1">-</button><span>${item.quantity}</span><button class="quantity-btn" data-cart-item-id="${item.cartItemId}" data-change="1">+</button></div><p>$${itemTotal.toFixed(2)}</p><button class="remove-btn" data-cart-item-id="${item.cartItemId}">×</button></div>`; cartItemsContainer.appendChild(el); }); cartSummary.innerHTML = `<h3>Total: $${total.toFixed(2)}</h3><div class="cart-summary-actions"><button class="secondary-btn back-button">Seguir Comprando</button><button class="checkout-btn">Proceder al Pago</button></div>`; } updateCartCounter(); }
     function renderBlogList(type) { const container = views[type].querySelector('.posts-container'); if(!container)return; container.innerHTML = ''; (allData[type] || []).forEach(post => { const postEl = document.createElement('div'); postEl.className = 'post-card'; let content = ''; if (type === 'dieta') { content = `<h4>Ingredientes:</h4><pre>${post.ingredientes}</pre><h4>Receta:</h4><pre>${post.receta}</pre>`; } else if (type === 'rutinas') { content = `<h4>Ejercicios:</h4><pre>${post.ejercicios}</pre>`; } else { content = `<p>${post.texto}</p>`; } postEl.innerHTML = `<img src="${post.imagen_url}"><div class="post-content"><h3>${post.titulo}</h3>${content}</div>`; container.appendChild(postEl); }); }
     function updateQuantity(cartItemId, change) { const item = cart.find(i => i.cartItemId === cartItemId); if (item) { item.quantity += change; if (item.quantity <= 0) cart = cart.filter(i => i.cartItemId !== cartItemId); saveCart(); renderCart(); } }
     function addToCart(id, size) { const cartItemId = `${id}-${size}`; const item = cart.find(i => i.cartItemId === cartItemId); if (item) { item.quantity++; } else { cart.push({ id, size, quantity: 1, cartItemId }); } saveCart(); updateCartCounter(); }
