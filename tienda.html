@@ -4,82 +4,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BeOriginalFit</title>
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    
     <style>
-        :root {
-            --background-color: #121212;
-            --surface-color: #1e1e1e;
-            --primary-color: #03dac6;
-            --text-color: #e0e0e0;
-            --secondary-text-color: #a0a0a0;
-            --border-color: #333333;
-            --error-color: #cf6679;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
-        body { color: var(--text-color); font-family: 'Poppins', sans-serif; background-color: var(--background-color); min-height: 100vh; }
-        #background-video { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; filter: brightness(0.2); }
-        .page-wrapper { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh;}
-        .view-container { width: 100%; display: block; flex-grow: 1; }
-        .view-container.is-hidden { display: none; }
-        .main-header { background-color: rgba(30, 30, 30, 0.8); backdrop-filter: blur(10px); padding: 0.8rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border-color); }
-        .header-left { display: flex; align-items: center; gap: 40px; }
-        .main-header .logo { height: 50px; width: auto; cursor: pointer; }
-        nav ul { list-style: none; display: flex; gap: 25px; }
-        nav a { color: var(--text-color); text-decoration: none; font-weight: 600; padding: 10px 0; position: relative; cursor: pointer; }
-        nav a::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px; background-color: var(--primary-color); transition: width 0.3s; }
-        nav a:hover::after { width: 100%; }
-        .dropdown { position: relative; }
-        .dropdown-content { display: none; position: absolute; top: 100%; left: 0; background-color: var(--surface-color); min-width: 200px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1; border-radius: 8px; padding: 10px 0; }
-        .dropdown-content a { display: block; padding: 12px 16px; color: var(--text-color); }
-        .dropdown:hover .dropdown-content { display: block; }
-        .cart-icon-container { position: relative; cursor: pointer; }
-        .cart-counter { position: absolute; top: -8px; right: -12px; background-color: var(--primary-color); color: var(--background-color); border-radius: 50%; padding: 2px 6px; font-size: 12px; font-weight: bold; border: 2px solid var(--background-color); }
-        #catalog-view main { max-width: 1200px; margin: 2rem auto; padding: 0 20px; }
-        #product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; perspective: 1500px; }
-        .product-card { background-color: transparent; width: 100%; aspect-ratio: 3 / 4; cursor: pointer; border: none; }
-        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.8s; transform-style: preserve-3d; }
-        .product-card.is-flipping .card-inner { transform: rotateY(180deg); }
-        .card-face { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; background-color: var(--surface-color); border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); }
-        .card-face img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .card-info-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 25px 15px 15px 15px; text-align: center; }
-        .card-info-overlay h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 5px; color: white; }
-        .card-info-overlay .price { font-size: 1rem; color: var(--primary-color); font-weight: 700; }
-        .quick-add-btn { position: absolute; top: 10px; right: 10px; background-color: rgba(255,255,255,0.8); color: var(--background-color); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; opacity: 0; transition: opacity 0.3s; z-index: 5; font-size: 1.5rem; font-weight: bold; }
-        .product-card:hover .quick-add-btn { opacity: 1; }
-        
-        #product-detail-view main, #cart-view main, #terms-view main, #vida-saludable-view main, #contacto-view main, .blog-view main { max-width: 900px; margin: 2rem auto; padding: 40px; background: var(--surface-color); border-radius: 15px; }
-        .back-button { /* ... */ }
-        .product-detail-container { display: flex; gap: 40px; }
-        .detail-image-container { flex: 1 1 50%; }
-        .detail-image-container img { width: 100%; border-radius: 10px; }
-        .detail-info-container { flex: 1 1 50%; }
-        .size-selector { margin-top: 1.5rem; }
-        .size-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
-        .size-btn { background: none; border: 1px solid var(--border-color); color: var(--text-color); padding: 10px 15px; border-radius: 8px; cursor: pointer; }
-        .size-btn.selected { background-color: var(--primary-color); color: var(--background-color); border-color: var(--primary-color); }
-
-        .cart-item { display: flex; align-items: center; gap: 20px; padding: 15px 0; border-bottom: 1px solid var(--border-color); }
-        .cart-item:last-child { border-bottom: none; }
-        .cart-summary { margin-top: 40px; padding-top: 20px; border-top: 2px solid var(--border-color); }
-        .cart-summary-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-        .checkout-btn, .secondary-btn { width: 100%; padding: 15px; border-radius: 30px; font-size: 1rem; font-weight: 600; cursor: pointer; border: 2px solid var(--primary-color); transition: all 0.3s; }
-        .checkout-btn { background-color: var(--primary-color); color: var(--background-color); }
-        .secondary-btn { background-color: transparent; color: var(--primary-color); }
-        
-        .hub-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; text-align: center; }
-        .hub-card { background-color: var(--background-color); padding: 40px 20px; border-radius: 10px; cursor: pointer; transition: transform 0.3s; }
-        .hub-card:hover { transform: scale(1.05); }
-        .hub-card h3 { font-family: 'Playfair Display', serif; font-size: 1.8rem; }
-        
-        .post-card { display: flex; gap: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; margin-bottom: 20px; }
-        .post-card img { width: 200px; height: 150px; object-fit: cover; border-radius: 8px; }
-        
-        .main-footer { text-align: center; padding: 2rem; margin-top: auto; background-color: rgba(18, 18, 18, 0.5); border-top: 1px solid var(--border-color); }
+        :root{--background-color:#121212;--surface-color:#1e1e1e;--primary-color:#03dac6;--text-color:#e0e0e0;--secondary-text-color:#a0a0a0;--border-color:#333333;--error-color:#cf6679}
+        *{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{color:var(--text-color);font-family:'Poppins',sans-serif;background-color:var(--background-color);min-height:100vh}
+        #background-video{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-1;filter:brightness(.2)}
+        .page-wrapper{position:relative;z-index:1;display:flex;flex-direction:column;min-height:100vh}
+        .view-container{width:100%;display:block;flex-grow:1}
+        .view-container.is-hidden{display:none}
+        .main-header{background-color:rgba(30,30,30,.8);backdrop-filter:blur(10px);padding:.8rem 2rem;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border-color)}
+        .header-left{display:flex;align-items:center;gap:40px}
+        .main-header .logo{height:50px;width:auto;cursor:pointer}
+        nav ul{list-style:none;display:flex;gap:25px}
+        nav a{color:var(--text-color);text-decoration:none;font-weight:600;padding:10px 0;position:relative;cursor:pointer}
+        nav a::after{content:'';position:absolute;bottom:0;left:0;width:0;height:2px;background-color:var(--primary-color);transition:width .3s}
+        nav a:hover::after{width:100%}
+        .dropdown{position:relative}
+        .dropdown-content{display:none;position:absolute;top:100%;left:0;background-color:var(--surface-color);min-width:200px;box-shadow:0 8px 16px rgba(0,0,0,.2);z-index:1;border-radius:8px;padding:10px 0}
+        .dropdown-content a{display:block;padding:12px 16px;color:var(--text-color)}
+        .dropdown:hover .dropdown-content{display:block}
+        .cart-icon-container{position:relative;cursor:pointer}
+        .cart-counter{position:absolute;top:-8px;right:-12px;background-color:var(--primary-color);color:var(--background-color);border-radius:50%;padding:2px 6px;font-size:12px;font-weight:700;border:2px solid var(--background-color)}
+        #catalog-view main{max-width:1200px;margin:2rem auto;padding:0 20px}
+        #product-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:30px;perspective:1500px}
+        .product-card{background-color:transparent;width:100%;aspect-ratio:3/4;cursor:pointer;border:none}
+        .card-inner{position:relative;width:100%;height:100%;transition:transform .8s;transform-style:preserve-3d}
+        .product-card.is-flipping .card-inner{transform:rotateY(180deg)}
+        .card-face{position:absolute;width:100%;height:100%;-webkit-backface-visibility:hidden;backface-visibility:hidden;background-color:var(--surface-color);border-radius:12px;overflow:hidden;border:1px solid var(--border-color)}
+        .card-face img{width:100%;height:100%;object-fit:cover;display:block}
+        .card-info-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,.8),transparent);padding:25px 15px 15px;text-align:center}
+        .card-info-overlay h3{font-size:1.1rem;font-weight:600;margin-bottom:5px;color:#fff}
+        .card-info-overlay .price{font-size:1rem;color:var(--primary-color);font-weight:700}
+        .quick-add-btn{position:absolute;top:10px;right:10px;background-color:rgba(255,255,255,.8);color:var(--background-color);border:none;width:40px;height:40px;border-radius:50%;cursor:pointer;opacity:0;transition:opacity .3s;z-index:5;font-size:1.5rem;font-weight:700}
+        .product-card:hover .quick-add-btn{opacity:1}
+        #product-detail-view main{max-width:900px;margin:2rem auto;padding:0;background:0 0}
+        #cart-view main,#contacto-view main,#terms-view main,#vida-saludable-view main,.blog-view main{max-width:900px;margin:2rem auto;padding:40px;background:var(--surface-color);border-radius:15px}
+        .back-button{background:var(--surface-color);border:1px solid var(--border-color);color:var(--text-color);font-size:1.5rem;cursor:pointer;width:45px;height:45px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .3s;position:absolute;top:100px;left:30px}
+        .back-button:hover{background-color:var(--primary-color);color:var(--background-color)}
+        .product-detail-container{display:flex;gap:40px;padding:40px;background:var(--surface-color);border-radius:15px}
+        .detail-image-container{flex:1 1 50%}
+        .detail-image-container img{width:100%;border-radius:10px}
+        .detail-info-container{flex:1 1 50%}
+        .detail-info-container h2{font-size:2.5rem;font-weight:700}
+        .size-selector{margin-top:1.5rem}
+        .size-selector h4{font-size:1rem;margin-bottom:.5rem;color:var(--secondary-text-color)}
+        .size-buttons{display:flex;flex-wrap:wrap;gap:10px}
+        .size-btn{background:0 0;border:1px solid var(--border-color);color:var(--text-color);padding:10px 15px;border-radius:8px;cursor:pointer}
+        .size-btn.selected{background-color:var(--primary-color);color:var(--background-color);border-color:var(--primary-color)}
+        .add-to-cart-btn{width:100%;margin-top:1.5rem;padding:15px;border-radius:30px}
+        .main-view-title{text-align:center;margin-bottom:2rem;font-size:2.5rem}
+        .cart-item{display:flex;align-items:center;gap:20px;padding:15px 0;border-bottom:1px solid var(--border-color)}
+        .cart-item:last-child{border-bottom:none}
+        .cart-item-img{width:80px;height:80px;object-fit:cover;border-radius:8px}
+        .cart-item-info{flex-grow:1}
+        .cart-item-info .talla{font-size:.9rem;color:var(--secondary-text-color)}
+        .cart-item-controls{display:flex;align-items:center;gap:15px}
+        .quantity-control{display:flex;align-items:center;gap:10px}
+        .quantity-btn{background:0 0;border:1px solid var(--border-color);color:var(--primary-color);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem}
+        .remove-btn{background:0 0;border:none;color:var(--error-color);font-size:1.5rem;cursor:pointer}
+        .cart-summary{margin-top:40px;padding-top:20px;border-top:2px solid var(--border-color)}
+        .cart-summary-actions{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+        .checkout-btn,.secondary-btn{width:100%;padding:15px;border-radius:30px;font-size:1rem;font-weight:600;cursor:pointer;border:2px solid var(--primary-color);transition:all .3s}
+        .checkout-btn{background-color:var(--primary-color);color:var(--background-color)}
+        .checkout-btn:hover{background-color:#02b8a2;border-color:#02b8a2}
+        .secondary-btn{background-color:transparent;color:var(--primary-color)}
+        .secondary-btn:hover{background-color:var(--primary-color);color:var(--background-color)}
+        .hub-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;text-align:center}
+        .hub-card{background-color:var(--background-color);padding:40px 20px;border-radius:10px;cursor:pointer;transition:transform .3s}
+        .hub-card:hover{transform:scale(1.05)}
+        .hub-card h3{font-family:'Playfair Display',serif;font-size:1.8rem}
+        .post-card{display:flex;gap:20px;border-bottom:1px solid var(--border-color);padding-bottom:20px;margin-bottom:20px}
+        .post-card img{width:200px;height:150px;object-fit:cover;border-radius:8px}
+        .main-footer{text-align:center;padding:2rem;margin-top:auto;background-color:rgba(18,18,18,.5);border-top:1px solid var(--border-color)}
+        .social-link svg{width:30px;height:30px;fill:var(--secondary-text-color)}
+        .spinner{display:block;margin:100px auto;width:50px;height:50px;border:5px solid var(--border-color);border-top-color:var(--primary-color);border-radius:50%;animation:spin 1s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @media (max-width:900px){#product-grid{grid-template-columns:repeat(2,1fr)}.product-detail-container,.cart-item{flex-direction:column}nav ul{display:none}}
     </style>
 </head>
 <body>
@@ -111,75 +113,43 @@
         <div id="catalog-view" class="view-container"><main><div id="product-grid"><div class="spinner"></div></div></main></div>
         <div id="product-detail-view" class="view-container is-hidden"><main><div class="product-detail-container"></div></main></div>
         <div id="cart-view" class="view-container is-hidden"><main><h2 class="main-view-title">Tu Carrito</h2><div id="cart-items-container"></div><div id="cart-summary"></div><div id="cart-empty-message" style="display: none;"><h3>Tu carrito está vacío</h3><p>Añade productos para verlos aquí.</p></div></main></div>
-        
         <div id="vida-saludable-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Vida Saludable</h2><div class="hub-grid"><div class="hub-card" data-view="dieta"><h3>Dieta</h3></div><div class="hub-card" data-view="rutinas"><h3>Rutinas</h3></div><div class="hub-card" data-view="consejos"><h3>Consejos</h3></div></div></main></div>
         <div id="dieta-view" class="blog-view view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Dieta</h2><div class="posts-container"></div></main></div>
         <div id="rutinas-view" class="blog-view view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Rutinas</h2><div class="posts-container"></div></main></div>
         <div id="consejos-view" class="blog-view view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Consejos</h2><div class="posts-container"></div></main></div>
-
-        <div id="terms-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Términos y Políticas de BOriginalFit</h2><p><strong>POLÍTICAS DE CAMBIOS Y DEVOLUCIONES</strong><br>Aceptamos cambios de talla y/o color en un plazo no mayor a 7 días hábiles...</p></main></div>
-        <div id="contacto-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Contacto</h2><p>Información de contacto...</p></main></div>
+        <div id="terms-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Términos y Políticas de BOriginalFit</h2><p><strong>POLÍTICAS DE CAMBIOS Y DEVOLUCIONES</strong><br>Aceptamos cambios de talla y/o color en un plazo no mayor a 7 días hábiles después de haber recibido tu paquete. El producto debe estar en perfecto estado, con etiquetas y empaque original. Los costos de envío para cambios corren por cuenta del cliente. No hay devoluciones de dinero, se genera un cupón por el valor de la prenda para ser utilizado en tienda.</p><p style="margin-top:1em;"><strong>GARANTÍA</strong><br>Todos nuestros productos tienen una garantía de 30 días por defectos de fabricación. La garantía no aplica por mal uso o desgaste natural.</p></main></div>
+        <div id="contacto-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Contacto</h2><p>Información de contacto próximamente.</p></main></div>
         
-        <footer class="main-footer"><a href="https://www.instagram.com/beoriginalfit/" target="_blank" class="social-link">...</a></footer>
+        <footer class="main-footer"><a href="https://www.instagram.com/beoriginalfit/" target="_blank" class="social-link"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z" /></svg></a></footer>
     </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-
     const googleSheetUrls = {
         products: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=0&single=true&output=csv',
-        dieta: 'URL_DE_TU_HOJA_DIETA_AQUI',
-        rutinas: 'URL_DE_TU_HOJA_RUTINAS_AQUI',
-        consejos: 'URL_DE_TU_HOJA_CONSEJOS_AQUI'
+        dieta: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=1621508657&single=true&output=csv',
+        rutinas: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=1898682901&single=true&output=csv',
+        consejos: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=1863005305&single=true&output=csv'
     };
-    
     let allData = { products: [], dieta: [], rutinas: [], consejos: [] }, cart = JSON.parse(localStorage.getItem('beOriginalFitCart')) || [];
-    
     const views = { catalog: document.getElementById('catalog-view'), detail: document.getElementById('product-detail-view'), cart: document.getElementById('cart-view'), terms: document.getElementById('terms-view'), 'vida-saludable': document.getElementById('vida-saludable-view'), contacto: document.getElementById('contacto-view'), dieta: document.getElementById('dieta-view'), rutinas: document.getElementById('rutinas-view'), consejos: document.getElementById('consejos-view') };
-    const productGrid = document.getElementById('product-grid');
-    
+    const productGrid = document.getElementById('product-grid'), productDetailContainer = views.detail.querySelector('.product-detail-container'), cartItemsContainer = views.cart.querySelector('#cart-items-container'), cartSummary = views.cart.querySelector('#cart-summary'), cartEmptyMessage = views.cart.querySelector('#cart-empty-message');
+
     function parseCSV(text){try{const lines=text.trim().split(/\r?\n/);if(lines.length<2)return[];const headers=lines[0].split(',').map(h=>h.trim().toLowerCase());return lines.slice(1).map(line=>{if(!line.trim())return null;const data=line.split(',');return headers.reduce((obj,header,i)=>{obj[header]=data[i]?data[i].trim():'';return obj},{})}).filter(Boolean)}catch(e){return[]}}
-    
-    async function loadAllData() {
-        try {
-            const requests = Object.entries(googleSheetUrls).map(([key, url]) => {
-                if (url.startsWith('URL_DE')) return Promise.resolve({key, data: []}); // No intentes cargar URLs de placeholder
-                return fetch(url, { cache: 'no-cache' }).then(res => res.text()).then(text => ({ key, data: parseCSV(text) }));
-            });
-            const results = await Promise.all(requests);
-            results.forEach(({ key, data }) => { allData[key] = data; });
-            renderCatalog();
-        } catch (err) { productGrid.innerHTML = `Error al cargar datos: ${err.message}`; }
-    }
-    
-    function renderCatalog(filter = 'todos') { productGrid.innerHTML = ''; const productsToDisplay = filter === 'todos' ? allData.products : allData.products.filter(p => p.categoria.toLowerCase() === filter.toLowerCase()); productsToDisplay.forEach(p => { const card = document.createElement('div'); card.className = 'product-card'; card.dataset.id = p.id; card.innerHTML = `<div class="card-inner"><div class="card-face"><img src="${p.imagen_url}" alt="${p.nombre}"><div class="card-info-overlay"><h3>${p.nombre}</h3><p class="price">$${parseFloat(p.precio).toFixed(2)}</p></div><button class="quick-add-btn" data-id="${p.id}">+</button></div></div>`; productGrid.appendChild(card); }); }
-    
-    function renderBlogList(type) {
-        const container = views[type].querySelector('.posts-container');
-        container.innerHTML = '';
-        allData[type].forEach(post => {
-            const postEl = document.createElement('div');
-            postEl.className = 'post-card';
-            postEl.innerHTML = `<img src="${post.imagen_url}"><div><h3>${post.titulo}</h3><p>${(post.texto || post.ejercicios || post.ingredientes).substring(0, 100)}...</p></div>`;
-            container.appendChild(postEl);
-        });
-    }
-
-    function renderState(state) { state = state || { view: 'catalog', data:{} }; Object.values(views).forEach(v => v.classList.add('is-hidden')); const activeView = views[state.view]; if (activeView) { activeView.classList.remove('is-hidden'); if(state.view.match(/dieta|rutinas|consejos/)) { renderBlogList(state.view); } if(state.view === 'cart') { renderCart(); } } else { views.catalog.classList.remove('is-hidden'); } }
-    
-    document.body.addEventListener('click', e => {
-        const target = e.target;
-        if(target.closest('.hub-card')) {
-            e.preventDefault();
-            navigateTo(target.closest('.hub-card').dataset.view);
-        }
-        // ... (resto de los event listeners del código anterior)
-    });
-
-    loadAllData().then(() => {
-        // ... (código de inicialización de estado)
-    });
-    // ... (resto del código JS)
+    async function loadAllData(){try{const reqs=Object.entries(googleSheetUrls).map(([key,url])=>{if(url.startsWith('URL_DE'))return Promise.resolve({key,data:[]});return fetch(url,{cache:'no-cache'}).then(res=>res.text()).then(text=>({key,data:parseCSV(text)}))});const results=await Promise.all(reqs);results.forEach(({key,data})=>allData[key]=data);renderCatalog()}catch(err){productGrid.innerHTML=`Error: ${err.message}`}}
+    function renderCatalog(filter='todos'){productGrid.innerHTML='';const prods=filter==='todos'?allData.products:allData.products.filter(p=>p.categoria.toLowerCase()===filter.toLowerCase());prods.forEach(p=>{const card=document.createElement('div');card.className='product-card';card.dataset.id=p.id;card.innerHTML=`<div class="card-inner"><div class="card-face"><img src="${p.imagen_url}" alt="${p.nombre}"><div class="card-info-overlay"><h3>${p.nombre}</h3><p class="price">$${parseFloat(p.precio).toFixed(2)}</p></div><button class="quick-add-btn" data-id="${p.id}">+</button></div></div>`;productGrid.appendChild(card)})}
+    function renderProductDetail(id){const p=allData.products.find(prod=>prod.id===id);if(!p)return;let tallasHTML='';const tallas=p.talla.split(',').map(t=>t.trim());if(tallas.length>1){tallasHTML=`<div class="size-selector"><h4>Talla:</h4><div class="size-buttons">${tallas.map((t,i)=>`<button class="size-btn ${i===0?'selected':''}" data-size="${t}">${t}</button>`).join('')}</div></div>`}else{tallasHTML=`<div class="size-selector"><h4>Talla:</h4><p>${p.talla}</p></div>`}productDetailContainer.innerHTML=`<div class="detail-image-container"><img src="${p.imagen_url}"></div><div class="detail-info-container"><h2>${p.nombre}</h2><p class="price-tag">$${parseFloat(p.precio).toFixed(2)}</p>${tallasHTML}<button class="add-to-cart-btn checkout-btn" data-id="${p.id}">Añadir al Carrito</button><p class="description" style="margin-top:1.5rem;">${p.descripcion||''}</p></div>`}
+    function renderCart(){cartItemsContainer.innerHTML='';if(cart.length===0){cartEmptyMessage.style.display='block';cartSummary.style.display='none'}else{cartEmptyMessage.style.display='none';cartSummary.style.display='block';let total=0;cart.forEach(item=>{const p=allData.products.find(prod=>prod.id===item.id);if(!p)return;const itemTotal=item.quantity*parseFloat(p.precio);total+=itemTotal;const el=document.createElement('div');el.className='cart-item';el.innerHTML=`<img src="${p.imagen_url}" class="cart-item-img"><div class="cart-item-info"><h4>${p.nombre}</h4><p class="talla">Talla: ${item.size}</p></div><div class="cart-item-controls"><div class="quantity-control"><button class="quantity-btn" data-cart-item-id="${item.cartItemId}" data-change="-1">-</button><span>${item.quantity}</span><button class="quantity-btn" data-cart-item-id="${item.cartItemId}" data-change="1">+</button></div><p>$${itemTotal.toFixed(2)}</p><button class="remove-btn" data-cart-item-id="${item.cartItemId}">×</button></div>`;cartItemsContainer.appendChild(el)});cartSummary.innerHTML=`<h3>Total: $${total.toFixed(2)}</h3><div class="cart-summary-actions"><button class="checkout-btn">Proceder al Pago</button><button class="secondary-btn back-button">Seguir Comprando</button></div>`}updateCartCounter()}
+    function renderBlogList(type){const container=views[type].querySelector('.posts-container');if(!container)return;container.innerHTML='';(allData[type]||[]).forEach(post=>{const postEl=document.createElement('div');postEl.className='post-card';postEl.innerHTML=`<img src="${post.imagen_url}"><div><h3>${post.titulo}</h3><p>${(post.texto||post.ejercicios||post.ingredientes).substring(0,100)}...</p></div>`;container.appendChild(postEl)})}
+    function updateQuantity(id,change){const item=cart.find(i=>i.cartItemId===id);if(item){item.quantity+=change;if(item.quantity<=0)cart=cart.filter(i=>i.cartItemId!==id);saveCart();renderCart()}}
+    function addToCart(id,size){const cartItemId=`${id}-${size}`;const item=cart.find(i=>i.cartItemId===cartItemId);if(item)item.quantity++;else cart.push({id,size,quantity:1,cartItemId});saveCart();updateCartCounter()}
+    function updateCartCounter(){const total=cart.reduce((s,i)=>s+i.quantity,0);document.querySelectorAll('.cart-counter').forEach(c=>c.textContent=total)}
+    function saveCart(){localStorage.setItem('beOriginalFitCart',JSON.stringify(cart))}
+    function navigateTo(view,data={}){const url=view==='detail'?`#product/${data.id}`:Object.keys(views).includes(view)&&view!=='catalog'?`#${view}`:'#';history.pushState({view,data},'',url);renderState({view,data})}
+    function renderState(state){state=state||{view:'catalog',data:{}};Object.values(views).forEach(v=>v.classList.add('is-hidden'));const flipped=document.querySelector('.product-card.is-flipping');if(flipped&&state.view!=='detail')flipped.classList.remove('is-flipping');const activeView=views[state.view]||views.catalog;activeView.classList.remove('is-hidden');if(state.view==='detail')renderProductDetail(state.data.id);if(state.view==='cart')renderCart();if(state.view.match(/dieta|rutinas|consejos/))renderBlogList(state.view)}
+    window.addEventListener('popstate',e=>renderState(e.state));
+    document.body.addEventListener('click',e=>{const t=e.target;if(t.closest('.logo')||t.closest('.back-button')){e.preventDefault();navigateTo('catalog')}if(t.closest('.cart-icon-container')){e.preventDefault();navigateTo('cart')}const navStatic=t.closest('.nav-link-static');if(navStatic){e.preventDefault();navigateTo(navStatic.dataset.view)}const filterLink=t.closest('.nav-link[data-filter]');if(filterLink){e.preventDefault();renderCatalog(filterLink.dataset.filter);navigateTo('catalog')}const pCard=t.closest('.product-card');if(pCard){const prod=allData.products.find(p=>p.id===pCard.dataset.id);if(!prod)return;const multiSize=prod.talla.includes(',');if(t.matches('.quick-add-btn')){e.stopPropagation();if(multiSize){if(!pCard.classList.contains('is-flipping')){pCard.classList.add('is-flipping');setTimeout(()=>navigateTo('detail',{id:pCard.dataset.id}),400)}}else{addToCart(prod.id,prod.talla)}}else{if(!pCard.classList.contains('is-flipping')){pCard.classList.add('is-flipping');setTimeout(()=>navigateTo('detail',{id:pCard.dataset.id}),400)}}}const detailCont=t.closest('.detail-info-container');if(detailCont){if(t.matches('.size-btn')){detailCont.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('selected'));t.classList.add('selected')}if(t.matches('.add-to-cart-btn')){const p=allData.products.find(prod=>prod.id===t.dataset.id);let size=p.talla;if(p.talla.includes(',')){const selSize=detailCont.querySelector('.size-btn.selected');if(!selSize){alert('Por favor, selecciona una talla.');return}size=selSize.dataset.size}addToCart(t.dataset.id,size)}}const cartCont=t.closest('#cart-items-container');if(cartCont){if(t.matches('.quantity-btn'))updateQuantity(t.dataset.cartItemId,parseInt(t.dataset.change,10));if(t.matches('.remove-btn')){cart=cart.filter(i=>i.cartItemId!==t.dataset.cartItemId);saveCart();renderCart()}}const hub=t.closest('.hub-card');if(hub){e.preventDefault();navigateTo(hub.dataset.view)}});
+    loadAllData().then(()=>{const hash=location.hash.substring(1);if(hash.startsWith('product/')){renderState({view:'detail',data:{id:hash.split('/')[1]}})}else if(views[hash]){renderState({view:hash})}else{renderState({view:'catalog'})}});updateCartCounter();
 });
 </script>
 </body>
