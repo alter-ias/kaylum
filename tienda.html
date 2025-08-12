@@ -47,7 +47,7 @@
         .main-header .logo { height: 50px; width: auto; cursor: pointer; }
         .cart-icon-container { position: relative; cursor: pointer; }
         #cart-icon { width: 30px; height: 30px; stroke: var(--primary-color); fill: none; }
-        #cart-counter { position: absolute; top: -8px; right: -12px; background-color: var(--primary-color); color: var(--background-color); border-radius: 50%; padding: 2px 6px; font-size: 12px; font-weight: bold; border: 2px solid var(--background-color); }
+        .cart-counter { position: absolute; top: -8px; right: -12px; background-color: var(--primary-color); color: var(--background-color); border-radius: 50%; padding: 2px 6px; font-size: 12px; font-weight: bold; border: 2px solid var(--background-color); }
 
         #catalog-view main { max-width: 1200px; margin: 2rem auto; padding: 0 20px; }
         #product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; perspective: 1500px; }
@@ -64,7 +64,6 @@
         .back-button { background: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-color); font-size: 1.5rem; cursor: pointer; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background-color 0.3s, transform 0.3s; z-index: 10; }
         .back-button:hover { background-color: var(--primary-color); color: var(--background-color); transform: scale(1.1); }
         
-        /* --- NUEVO: ESTILOS DEL CARRITO FUNCIONAL --- */
         #cart-view-container { max-width: 900px; margin: 2rem auto; padding: 20px; }
         #cart-view-container h2 { font-size: 2.5rem; margin-bottom: 2rem; text-align: center; }
         #cart-items-container { display: flex; flex-direction: column; gap: 15px; }
@@ -85,10 +84,9 @@
         .product-detail-container { display: flex; max-width: 1100px; margin: 50px auto; background-color: var(--surface-color); border-radius: 15px; overflow: hidden; border: 1px solid var(--border-color); }
         .detail-image-container { flex: 1 1 50%; }
         .detail-image-container img { width: 100%; height: 100%; object-fit: cover; }
-        .detail-info-container { flex: 1 1 50%; padding: 40px; }
-        .detail-info-container h2 { font-size: 2.5rem; }
+        .detail-info-container { flex: 1 1 50%; padding: 40px; display: flex; flex-direction: column; }
+        .detail-info-container h2 { font-size: 2.5rem; font-weight: 700; }
         
-        /* --- NUEVO: FOOTER --- */
         .main-footer { text-align: center; padding: 2rem; margin-top: 3rem; background-color: rgba(18, 18, 18, 0.5); border-top: 1px solid var(--border-color); }
         .social-link svg { width: 30px; height: 30px; fill: var(--secondary-text-color); transition: fill 0.3s; }
         .social-link:hover svg { fill: var(--primary-color); }
@@ -100,55 +98,63 @@
     </style>
 </head>
 <body>
-    <!-- NUEVO: VIDEO DE FONDO -->
     <video autoplay muted loop playsinline id="background-video" src="./assets/mayfit/videos/fondo01.webm"></video>
 
     <div class="page-wrapper">
         <div id="catalog-view" class="view-container">
             <header class="main-header">
                 <img src="./assets/mayfit/img/logo.png" alt="BeOriginalFit Logo" class="logo">
-                <div class="cart-icon-container" id="header-cart-icon">
-                    <svg id="cart-icon" viewBox="0 0 24 24" stroke-width="1.5"><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-                    <span id="cart-counter">0</span>
+                <div class="cart-icon-container">
+                    <svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                    <span class="cart-counter">0</span>
                 </div>
             </header>
-            <main>
-                <div id="product-grid"><div class="spinner"></div></div>
-            </main>
+            <main><div id="product-grid"><div class="spinner"></div></div></main>
         </div>
         
         <div id="product-detail-view" class="view-container is-hidden">
-             <!-- (El contenido de la vista de detalle no cambia, se ha omitido por brevedad en la explicación pero está en el código) -->
+            <header class="main-header">
+                <img src="./assets/mayfit/img/logo.png" alt="BeOriginalFit Logo" class="logo">
+                <div class="cart-icon-container">
+                     <svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                    <span class="cart-counter">0</span>
+                </div>
+            </header>
+             <main>
+                <button class="back-button" id="back-to-catalog-from-detail">&larr;</button>
+                <div class="product-detail-container">
+                    <div class="detail-image-container"><img id="detail-image" src="" alt=""></div>
+                    <div class="detail-info-container">
+                        <h2 id="detail-name"></h2>
+                        <p class="price-tag" id="detail-price"></p>
+                        <p class="description" id="detail-description"></p>
+                        <button class="add-to-cart-btn" id="add-to-cart-detail-btn">Añadir al Carrito</button>
+                    </div>
+                </div>
+            </main>
         </div>
 
-        <!-- NUEVA VISTA: CARRITO DE COMPRAS -->
         <div id="cart-view" class="view-container is-hidden">
             <header class="main-header">
                 <img src="./assets/mayfit/img/logo.png" alt="BeOriginalFit Logo" class="logo">
-                <div class="cart-icon-container" id="header-cart-icon-alt">
-                    <svg id="cart-icon" viewBox="0 0 24 24" stroke-width="1.5"><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-                    <span id="cart-counter-alt">0</span>
+                <div class="cart-icon-container">
+                    <svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                    <span class="cart-counter">0</span>
                 </div>
             </header>
             <div id="cart-view-container">
-                <button class="back-button" id="back-to-catalog-from-cart" aria-label="Volver al catálogo">&larr;</button>
+                <button class="back-button" id="back-to-catalog-from-cart">&larr;</button>
                 <h2>Tu Carrito</h2>
-                <div id="cart-items-container">
-                    <!-- Los items del carrito se renderizarán aquí -->
-                </div>
-                <div id="cart-summary">
-                    <!-- El total se renderizará aquí -->
-                </div>
+                <div id="cart-items-container"></div>
+                <div id="cart-summary"></div>
                 <div id="cart-empty-message" style="display: none;">
-                    <h3>Tu carrito está vacío</h3>
-                    <p>Añade productos para verlos aquí.</p>
+                    <h3>Tu carrito está vacío</h3><p>Añade productos para verlos aquí.</p>
                 </div>
             </div>
         </div>
 
-        <!-- NUEVO: FOOTER -->
         <footer class="main-footer">
-            <a href="https://www.instagram.com/tu_usuario" target="_blank" class="social-link" aria-label="Visita nuestro Instagram">
+            <a href="https://www.instagram.com/beoriginalfit/" target="_blank" class="social-link" aria-label="Visita nuestro Instagram">
                 <svg viewBox="0 0 24 24"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z" /></svg>
             </a>
         </footer>
@@ -157,7 +163,6 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- SELECTORES, ESTADO Y CONFIGURACIÓN ---
     const googleSheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=0&single=true&output=csv';
     let allProducts = [];
     let cart = JSON.parse(localStorage.getItem('beOriginalFitCart')) || [];
@@ -166,27 +171,80 @@ document.addEventListener('DOMContentLoaded', () => {
     const productDetailView = document.getElementById('product-detail-view');
     const cartView = document.getElementById('cart-view');
     const productGrid = document.getElementById('product-grid');
-    const cartCounters = [document.getElementById('cart-counter'), document.getElementById('cart-counter-alt')];
-    const headerCartIcons = [document.getElementById('header-cart-icon'), document.getElementById('header-cart-icon-alt')];
+    const cartCounters = document.querySelectorAll('.cart-counter');
+    const cartIconContainers = document.querySelectorAll('.cart-icon-container');
     const logos = document.querySelectorAll('.logo');
 
-    // --- NUEVOS SELECTORES PARA EL CARRITO ---
+    const backToCatalogFromDetailBtn = document.getElementById('back-to-catalog-from-detail');
+    const detailImage = document.getElementById('detail-image');
+    const detailName = document.getElementById('detail-name');
+    const detailPrice = document.getElementById('detail-price');
+    const detailDescription = document.getElementById('detail-description');
+    const addToCartDetailBtn = document.getElementById('add-to-cart-detail-btn');
+    
     const cartItemsContainer = document.getElementById('cart-items-container');
     const cartSummary = document.getElementById('cart-summary');
     const cartEmptyMessage = document.getElementById('cart-empty-message');
     const backToCatalogFromCartBtn = document.getElementById('back-to-catalog-from-cart');
 
-    // --- LÓGICA DE CARGA DE DATOS (sin cambios) ---
+    function parseCSV(csvText) {
+        try {
+            const lines = csvText.trim().split(/\r?\n/);
+            if (lines.length < 2) return [];
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            return lines.slice(1).map(line => {
+                if (!line.trim()) return null;
+                const data = line.split(',');
+                return headers.reduce((obj, header, i) => {
+                    obj[header] = data[i] ? data[i].trim() : '';
+                    return obj;
+                }, {});
+            }).filter(Boolean);
+        } catch (e) { return []; }
+    }
+
     async function loadProductsData() {
-        // ... (El código de loadProductsData es el mismo, se omite por brevedad)
+        try {
+            const response = await fetch(googleSheetCsvUrl, { cache: 'no-cache' });
+            if (!response.ok) throw new Error(`Error de red: ${response.status}`);
+            const csvText = await response.text();
+            if (!csvText.trim()) throw new Error("El archivo CSV está vacío.");
+            
+            const parsedData = parseCSV(csvText);
+            const requiredFields = ['id', 'nombre', 'precio', 'imagen_url', 'stock'];
+            allProducts = parsedData.filter(p => requiredFields.every(field => p[field]));
+            
+            if (allProducts.length === 0) {
+                productGrid.innerHTML = '<div class="message-container">No se encontraron productos válidos.</div>';
+                return;
+            }
+            renderCatalog();
+        } catch (error) {
+            productGrid.innerHTML = `<div class="message-container error"><h3>Error</h3><p>${error.message}</p></div>`;
+        }
     }
 
-    // --- LÓGICA DE RENDERIZADO (sin cambios en catálogo) ---
     function renderCatalog() {
-        // ... (El código de renderCatalog es el mismo, se omite por brevedad)
+        productGrid.innerHTML = '';
+        allProducts.forEach(product => {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.dataset.id = product.id;
+            card.innerHTML = `
+                <div class="card-inner">
+                    <div class="card-face">
+                        <img src="${product.imagen_url}" alt="${product.nombre}" loading="lazy">
+                        <div class="card-info-overlay">
+                            <h3>${product.nombre}</h3>
+                            <p class="price">$${parseFloat(product.precio).toFixed(2)}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            productGrid.appendChild(card);
+        });
     }
 
-    // --- LÓGICA DEL CARRITO (TOTALMENTE NUEVA Y MEJORADA) ---
     function renderCart() {
         cartItemsContainer.innerHTML = '';
         if (cart.length === 0) {
@@ -196,22 +254,16 @@ document.addEventListener('DOMContentLoaded', () => {
             cartEmptyMessage.style.display = 'none';
             cartSummary.style.display = 'block';
             let total = 0;
-
             cart.forEach(item => {
                 const product = allProducts.find(p => p.id === item.id);
-                if (!product) return; // Si el producto ya no existe, no lo renderiza
-
+                if (!product) return;
                 const itemTotal = item.quantity * parseFloat(product.precio);
                 total += itemTotal;
-
                 const cartItemElement = document.createElement('div');
                 cartItemElement.className = 'cart-item';
                 cartItemElement.innerHTML = `
                     <img src="${product.imagen_url}" alt="${product.nombre}" class="cart-item-img">
-                    <div class="cart-item-info">
-                        <h4>${product.nombre}</h4>
-                        <p>$${parseFloat(product.precio).toFixed(2)}</p>
-                    </div>
+                    <div class="cart-item-info"><h4>${product.nombre}</h4><p>$${parseFloat(product.precio).toFixed(2)}</p></div>
                     <div class="cart-item-controls">
                         <div class="quantity-control">
                             <button class="quantity-btn" data-id="${item.id}" data-change="-1">-</button>
@@ -220,15 +272,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <p>$${itemTotal.toFixed(2)}</p>
                         <button class="remove-btn" data-id="${item.id}">×</button>
-                    </div>
-                `;
+                    </div>`;
                 cartItemsContainer.appendChild(cartItemElement);
             });
-
-            cartSummary.innerHTML = `
-                <h3>Total: $${total.toFixed(2)}</h3>
-                <button class="checkout-btn">Proceder al Pago</button>
-            `;
+            cartSummary.innerHTML = `<h3>Total: $${total.toFixed(2)}</h3><button class="checkout-btn">Proceder al Pago</button>`;
         }
         updateCartCounter();
     }
@@ -236,24 +283,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateQuantity(productId, change) {
         const itemInCart = cart.find(item => item.id === productId);
         if (!itemInCart) return;
-
         itemInCart.quantity += change;
-
         if (itemInCart.quantity <= 0) {
             cart = cart.filter(item => item.id !== productId);
         }
-        
         saveCart();
         renderCart();
     }
 
     function addToCart(productId) {
         const itemInCart = cart.find(item => item.id === productId);
-        if (itemInCart) {
-            itemInCart.quantity++;
-        } else {
-            cart.push({ id: productId, quantity: 1 });
-        }
+        if (itemInCart) itemInCart.quantity++;
+        else cart.push({ id: productId, quantity: 1 });
         saveCart();
         updateCartCounter();
     }
@@ -267,54 +308,62 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('beOriginalFitCart', JSON.stringify(cart));
     }
 
-    // --- NAVEGACIÓN Y VISTAS ---
     function showView(viewToShow) {
-        [catalogView, productDetailView, cartView].forEach(view => {
-            view.classList.add('is-hidden');
-        });
+        [catalogView, productDetailView, cartView].forEach(view => view.classList.add('is-hidden'));
         viewToShow.classList.remove('is-hidden');
         window.scrollTo(0, 0);
     }
+
+    function displayProductDetail(productId) {
+        const product = allProducts.find(p => p.id === productId);
+        if (!product) return;
+        detailImage.src = product.imagen_url;
+        detailName.textContent = product.nombre;
+        detailPrice.textContent = `$${parseFloat(product.precio).toFixed(2)}`;
+        detailDescription.textContent = product.descripcion || 'Próximamente más detalles.';
+        addToCartDetailBtn.dataset.id = product.id;
+        showView(productDetailView);
+    }
+
+    productGrid.addEventListener('click', e => {
+        const card = e.target.closest('.product-card');
+        if (card && card.dataset.id && !card.classList.contains('is-flipping')) {
+            card.classList.add('is-flipping');
+            setTimeout(() => displayProductDetail(card.dataset.id), 400);
+        }
+    });
     
-    // --- MANEJADORES DE EVENTOS ---
+    backToCatalogFromDetailBtn.addEventListener('click', () => {
+        const flippedCard = document.querySelector('.product-card.is-flipping');
+        if (flippedCard) flippedCard.classList.remove('is-flipping');
+        showView(catalogView);
+    });
+
     logos.forEach(logo => logo.addEventListener('click', () => showView(catalogView)));
-    
-    headerCartIcons.forEach(icon => icon.addEventListener('click', () => {
+    cartIconContainers.forEach(icon => icon.addEventListener('click', () => {
         renderCart();
         showView(cartView);
     }));
 
     backToCatalogFromCartBtn.addEventListener('click', () => showView(catalogView));
 
+    addToCartDetailBtn.addEventListener('click', (e) => addToCart(e.target.dataset.id));
+    
     cartItemsContainer.addEventListener('click', e => {
         const target = e.target;
-        const productId = target.dataset.id;
-        
         if (target.classList.contains('quantity-btn')) {
-            const change = parseInt(target.dataset.change, 10);
-            updateQuantity(productId, change);
+            updateQuantity(target.dataset.id, parseInt(target.dataset.change, 10));
         }
         if (target.classList.contains('remove-btn')) {
-            cart = cart.filter(item => item.id !== productId);
+            cart = cart.filter(item => item.id !== target.dataset.id);
             saveCart();
             renderCart();
         }
     });
 
-    // ... (El resto de los manejadores de eventos se mantienen)
-    productGrid.addEventListener('click', e => {
-        //...
-    });
-    
     loadProductsData();
     updateCartCounter();
-    
-    // El resto de las funciones como displayProductDetail, closeProductDetail, etc., se mantienen igual
-    // y se omiten aquí por brevedad, pero están incluidas en el código completo que te proporcioné.
 });
-
-// Incluir el resto de las funciones para que el script esté completo.
-// Esta es solo una representación del código, el bloque HTML completo contiene todo lo necesario.
 </script>
 </body>
 </html>
