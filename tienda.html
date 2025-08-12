@@ -53,6 +53,8 @@
         .quick-add-btn { position: absolute; top: 10px; right: 10px; background-color: rgba(255,255,255,0.8); color: var(--background-color); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; opacity: 0; transition: opacity 0.3s; z-index: 5; font-size: 1.5rem; font-weight: bold; }
         .product-card:hover .quick-add-btn { opacity: 1; }
         #product-detail-view main, #cart-view main, #terms-view main, #vida-saludable-view main, #contacto-view main, .blog-view main { max-width: 900px; margin: 2rem auto; padding: 40px; background: var(--surface-color); border-radius: 15px; }
+        .main-view-title { text-align: center; margin-bottom: 1.5rem; font-size: 2.5rem; }
+        .view-banner-image { width: 100%; max-height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 2rem; }
         .product-detail-container { display: flex; gap: 40px; }
         .detail-image-container { flex: 1 1 50%; }
         .detail-image-container img { width: 100%; border-radius: 10px; }
@@ -62,7 +64,6 @@
         .size-btn { background: none; border: 1px solid var(--border-color); color: var(--text-color); padding: 10px 15px; border-radius: 8px; cursor: pointer; }
         .size-btn.selected { background-color: var(--primary-color); color: var(--background-color); border-color: var(--primary-color); }
         .add-to-cart-btn { width: 100%; margin-top: 1.5rem; padding: 15px; border-radius: 30px; }
-        .main-view-title { text-align: center; margin-bottom: 2rem; font-size: 2.5rem; }
         .cart-item { display: flex; align-items: center; gap: 20px; padding: 15px 0; border-bottom: 1px solid var(--border-color); }
         .cart-item:last-child { border-bottom: none; }
         .cart-item-img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; }
@@ -94,9 +95,7 @@
         .social-link svg { width: 30px; height: 30px; fill: var(--secondary-text-color); }
         .spinner { display: block; margin: 100px auto; width: 50px; height: 50px; border: 5px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        
         #mobile-nav-bar, #mobile-nav-panel, #mobile-nav-overlay { display: none; }
-        
         @media (max-width: 900px) { 
             #product-grid { grid-template-columns: repeat(2, 1fr); } 
             .product-detail-container, .cart-item { flex-direction: column; } 
@@ -139,19 +138,19 @@
             </div>
         </header>
 
-        <div id="catalog-view" class="view-container"><main><div id="product-grid"><div class="spinner"></div></div></main></div>
-        <div id="product-detail-view" class="view-container is-hidden"><main><div class="product-detail-container"></div></main></div>
-        <div id="cart-view" class="view-container is-hidden"><main><h2 class="main-view-title">Tu Carrito</h2><div id="cart-items-container"></div><div id="cart-summary"></div><div id="cart-empty-message" style="display: none;"><h3>Tu carrito está vacío</h3><p>Añade productos para verlos aquí.</p></div></main></div>
+        <div id="catalog-view" class="view-container"><main><h2 class="main-view-title">Nuestros Productos</h2><img src="./assets/mayfit/img/productos.png" alt="Nuestros Productos" class="view-banner-image"><div id="product-grid"><div class="spinner"></div></div></main></div>
+        <div id="product-detail-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><div class="product-detail-container"></div></main></div>
+        <div id="cart-view" class="view-container is-hidden"><main><h2 class="main-view-title">Tu Carrito</h2><img src="./assets/mayfit/img/carrito.png" alt="Carrito" class="view-banner-image"><div id="cart-items-container"></div><div id="cart-summary"></div><div id="cart-empty-message" style="display: none;"><h3>Tu carrito está vacío</h3><p>Añade productos para verlos aquí.</p></div></main></div>
         <div id="vida-saludable-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Vida Saludable</h2><div class="hub-grid"><div class="hub-card" data-view="dieta"><img src="./assets/mayfit/img/dieta.png"><h3>Alimentación</h3></div><div class="hub-card" data-view="rutinas"><img src="./assets/mayfit/img/rutina.png"><h3>Ejercicios</h3></div><div class="hub-card" data-view="consejos"><img src="./assets/mayfit/img/consejos.png"><h3>Consejos</h3></div></div></main></div>
         <div id="dieta-view" class="blog-view view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Alimentación</h2><div class="posts-container"></div></main></div>
         <div id="rutinas-view" class="blog-view view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Ejercicios</h2><div class="posts-container"></div></main></div>
         <div id="consejos-view" class="blog-view view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Consejos</h2><div class="posts-container"></div></main></div>
-        <div id="terms-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Términos y Políticas de BOriginalFit</h2><p><strong>POLÍTICAS DE CAMBIOS Y DEVOLUCIONES</strong><br>Aceptamos cambios de talla y/o color en un plazo no mayor a 7 días hábiles...</p></main></div>
-        <div id="contacto-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Contacto</h2><p>Información de contacto...</p></main></div>
+        <div id="terms-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Términos y Políticas</h2><img src="./assets/mayfit/img/terminos.png" alt="Términos" class="view-banner-image"><p><strong>POLÍTICAS DE CAMBIOS Y DEVOLUCIONES</strong><br>Aceptamos cambios de talla y/o color en un plazo no mayor a 7 días hábiles...</p></main></div>
+        <div id="contacto-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Contacto</h2><img src="./assets/mayfit/img/contacto.png" alt="Contacto" class="view-banner-image"><p>Información de contacto...</p></main></div>
         
         <footer class="main-footer"><a href="https://www.instagram.com/beoriginalfit/" target="_blank" class="social-link"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z" /></svg></a></footer>
     </div>
-    
+
     <div id="mobile-nav-overlay"></div>
     <nav id="mobile-nav-bar">
         <button class="mobile-nav-btn nav-link" data-filter="todos">Productos</button>
