@@ -17,36 +17,30 @@
             --text-color: #e0e0e0;
             --secondary-text-color: #a0a0a0;
             --border-color: #333333;
+            --error-color: #cf6679;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
         body { color: var(--text-color); font-family: 'Poppins', sans-serif; background-color: var(--background-color); min-height: 100vh; }
         #background-video { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; filter: brightness(0.2); }
-        
         .page-wrapper { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh;}
         .view-container { width: 100%; display: block; flex-grow: 1; }
         .view-container.is-hidden { display: none; }
-        
         .main-header { background-color: rgba(30, 30, 30, 0.8); backdrop-filter: blur(10px); padding: 0.8rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border-color); }
         .header-left { display: flex; align-items: center; gap: 40px; }
         .main-header .logo { height: 50px; width: auto; cursor: pointer; }
-        
-        /* --- NUEVO: NAVEGACIÓN --- */
         nav ul { list-style: none; display: flex; gap: 25px; }
-        nav a { color: var(--text-color); text-decoration: none; font-weight: 600; padding: 10px 0; position: relative; }
+        nav a { color: var(--text-color); text-decoration: none; font-weight: 600; padding: 10px 0; position: relative; cursor: pointer; }
         nav a::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px; background-color: var(--primary-color); transition: width 0.3s; }
         nav a:hover::after { width: 100%; }
         .dropdown { position: relative; }
         .dropdown-content { display: none; position: absolute; top: 100%; left: 0; background-color: var(--surface-color); min-width: 200px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1; border-radius: 8px; padding: 10px 0; }
         .dropdown-content a { display: block; padding: 12px 16px; color: var(--text-color); }
         .dropdown:hover .dropdown-content { display: block; }
-
         .cart-icon-container { position: relative; cursor: pointer; }
         .cart-counter { position: absolute; top: -8px; right: -12px; background-color: var(--primary-color); color: var(--background-color); border-radius: 50%; padding: 2px 6px; font-size: 12px; font-weight: bold; border: 2px solid var(--background-color); }
-
         #catalog-view main { max-width: 1200px; margin: 2rem auto; padding: 0 20px; }
         #product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; perspective: 1500px; }
-        
         .product-card { background-color: transparent; width: 100%; aspect-ratio: 3 / 4; cursor: pointer; border: none; }
         .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.8s; transform-style: preserve-3d; }
         .product-card.is-flipping .card-inner { transform: rotateY(180deg); }
@@ -55,13 +49,32 @@
         .card-info-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 25px 15px 15px 15px; text-align: center; }
         .card-info-overlay h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 5px; color: white; }
         .card-info-overlay .price { font-size: 1rem; color: var(--primary-color); font-weight: 700; }
-        
-        .quick-add-btn { position: absolute; top: 10px; right: 10px; background-color: rgba(255,255,255,0.8); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; opacity: 0; transition: opacity 0.3s; z-index: 5; }
+        .quick-add-btn { position: absolute; top: 10px; right: 10px; background-color: rgba(255,255,255,0.8); color: var(--background-color); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; opacity: 0; transition: opacity 0.3s; z-index: 5; font-size: 1.5rem; font-weight: bold; }
         .product-card:hover .quick-add-btn { opacity: 1; }
-        
-        #product-detail-view main, #cart-view main, #terms-view main { max-width: 900px; margin: 2rem auto; padding: 20px; background: var(--surface-color); border-radius: 15px; }
-
+        #product-detail-view main, #cart-view main, #terms-view main, #consejos-view main, #contacto-view main { max-width: 900px; margin: 2rem auto; padding: 40px; background: var(--surface-color); border-radius: 15px; }
+        .back-button { background: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-color); font-size: 1.5rem; cursor: pointer; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.3s; position: absolute; top: 100px; left: 30px; }
+        .back-button:hover { background-color: var(--primary-color); color: var(--background-color); }
+        .product-detail-container { display: flex; gap: 40px; }
+        .detail-image-container { flex: 1 1 50%; }
+        .detail-image-container img { width: 100%; border-radius: 10px; }
+        .detail-info-container { flex: 1 1 50%; }
+        .main-view-title { text-align: center; margin-bottom: 2rem; font-size: 2.5rem; }
+        .cart-item { display: flex; align-items: center; gap: 20px; padding: 15px; border-bottom: 1px solid var(--border-color); }
+        .cart-item:last-child { border-bottom: none; }
+        .cart-item-img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; }
+        .cart-item-info { flex-grow: 1; }
+        .cart-item-controls { display: flex; align-items: center; gap: 15px; }
+        .quantity-control { display: flex; align-items: center; gap: 10px; }
+        .quantity-btn { background: none; border: 1px solid var(--border-color); color: var(--primary-color); width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; }
+        .remove-btn { background: none; border: none; color: var(--error-color); font-size: 1.5rem; cursor: pointer; }
+        .cart-summary { margin-top: 40px; padding-top: 20px; border-top: 2px solid var(--border-color); text-align: right; }
+        .cart-summary-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+        .secondary-btn { background-color: transparent; color: var(--primary-color); border: 1px solid var(--primary-color); padding: 15px 30px; }
         .main-footer { text-align: center; padding: 2rem; margin-top: auto; background-color: rgba(18, 18, 18, 0.5); border-top: 1px solid var(--border-color); }
+        .social-link svg { width: 30px; height: 30px; fill: var(--secondary-text-color); }
+        .spinner { display: block; margin: 100px auto; width: 50px; height: 50px; border: 5px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 900px) { #product-grid { grid-template-columns: repeat(2, 1fr); } .product-detail-container, .cart-item { flex-direction: column; } nav ul { display: none; } }
     </style>
 </head>
 <body>
@@ -69,25 +82,18 @@
     <div class="page-wrapper">
         <header class="main-header">
             <div class="header-left">
-                <img src="./assets/mayfit/img/logo.png" alt="Logo" class="logo">
+                <img src="./assets/mayfit/img/logo01.png" alt="Logo" class="logo">
                 <nav>
                     <ul>
-                        <li><a href="#consejos">Consejos</a></li>
-                        <li><a href="#contacto">Contacto</a></li>
+                        <li><a class="nav-link-static" data-view="consejos">Consejos</a></li>
+                        <li><a class="nav-link-static" data-view="contacto">Contacto</a></li>
                         <li class="dropdown">
-                            <a href="#" class="nav-link" data-filter="todos">Productos</a>
+                            <a class="nav-link" data-filter="todos">Productos</a>
                             <div class="dropdown-content">
-                                <a href="#" class="nav-link" data-filter="todos">Todos</a>
-                                <a href="#" class="nav-link" data-filter="Leggins">Leggins</a>
-                                <a href="#" class="nav-link" data-filter="Capri">Capri</a>
-                                <a href="#" class="nav-link" data-filter="Short">Short</a>
-                                <a href="#" class="nav-link" data-filter="Top">Top</a>
-                                <a href="#" class="nav-link" data-filter="Blusa">Blusa</a>
-                                <a href="#" class="nav-link" data-filter="Sudadera">Sudadera</a>
-                                <a href="#" class="nav-link" data-filter="CONJUNTO 2 PIEZAS">Conjunto 2 Piezas</a>
+                                <a href="#" class="nav-link" data-filter="todos">Todos</a><a href="#" class="nav-link" data-filter="Leggins">Leggins</a><a href="#" class="nav-link" data-filter="Capri">Capri</a><a href="#" class="nav-link" data-filter="Short">Short</a><a href="#" class="nav-link" data-filter="Top">Top</a><a href="#" class="nav-link" data-filter="Blusa">Blusa</a><a href="#" class="nav-link" data-filter="Sudadera">Sudadera</a><a href="#" class="nav-link" data-filter="CONJUNTO 2 PIEZAS">Conjunto 2 Piezas</a>
                             </div>
                         </li>
-                        <li><a href="#terms">Términos</a></li>
+                        <li><a class="nav-link-static" data-view="terms">Términos</a></li>
                     </ul>
                 </nav>
             </div>
@@ -97,36 +103,17 @@
             </div>
         </header>
 
-        <div id="catalog-view" class="view-container">
-            <main><div id="product-grid"><div class="spinner"></div></div></main>
-        </div>
+        <div id="catalog-view" class="view-container"><main><div id="product-grid"><div class="spinner"></div></div></main></div>
+        <div id="product-detail-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><div class="product-detail-container"></div></main></div>
+        <div id="cart-view" class="view-container is-hidden"><main><h2 class="main-view-title">Tu Carrito</h2><div id="cart-items-container"></div><div id="cart-summary"></div><div id="cart-empty-message" style="display: none;"><h3>Tu carrito está vacío</h3><p>Añade productos para verlos aquí.</p></div></main></div>
         
-        <div id="product-detail-view" class="view-container is-hidden">
-            <main><button class="back-button">&larr;</button><div class="product-detail-container"></div></main>
-        </div>
-
-        <div id="cart-view" class="view-container is-hidden">
-            <main>
-                <h2>Tu Carrito</h2>
-                <div id="cart-items-container"></div>
-                <div id="cart-summary"></div>
-                <div id="cart-empty-message" style="display: none;">
-                    <h3>Tu carrito está vacío</h3><p>Añade productos para verlos aquí.</p>
-                </div>
-            </main>
-        </div>
-        
-        <div id="terms-view" class="view-container is-hidden">
-            <main>
-                <h2>Términos y Políticas de BOriginalFit</h2>
-                <p><strong>POLÍTICAS DE CAMBIOS Y DEVOLUCIONES</strong><br>Aceptamos cambios de talla y/o color en un plazo no mayor a 7 días hábiles después de haber recibido tu paquete. El producto debe estar en perfecto estado, con etiquetas y empaque original. Los costos de envío para cambios corren por cuenta del cliente.</p>
-                <!-- ... resto del contenido de términos ... -->
-            </main>
-        </div>
+        <div id="terms-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Términos y Políticas de BOriginalFit</h2><p><strong>POLÍTICAS DE CAMBIOS Y DEVOLUCIONES</strong><br>Aceptamos cambios de talla y/o color en un plazo no mayor a 7 días hábiles después de haber recibido tu paquete. El producto debe estar en perfecto estado, con etiquetas y empaque original. Los costos de envío para cambios corren por cuenta del cliente. No hay devoluciones de dinero, se genera un cupón por el valor de la prenda para ser utilizado en tienda.</p><p style="margin-top:1em;"><strong>GARANTÍA</strong><br>Todos nuestros productos tienen una garantía de 30 días por defectos de fabricación. La garantía no aplica por mal uso o desgaste natural.</p></main></div>
+        <div id="consejos-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Consejos</h2><p>Contenido sobre consejos de fitness y bienestar próximamente.</p></main></div>
+        <div id="contacto-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Contacto</h2><p>Información de contacto y formulario próximamente.</p></main></div>
 
         <footer class="main-footer">
             <a href="https://www.instagram.com/beoriginalfit/" target="_blank" class="social-link" aria-label="Instagram">
-                <svg viewBox="0 0 24 24" style="width:30px;height:30px;"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z" /></svg>
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z" /></svg>
             </a>
         </footer>
     </div>
@@ -137,29 +124,48 @@ document.addEventListener('DOMContentLoaded', () => {
     const googleSheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQHURoefweIfbu75E_woFtVWZK-YVZmY7Lv9zqNR9NyJjETUJqingIeRn-HGrndDdmANttnLV504AJH/pub?gid=0&single=true&output=csv';
     let allProducts = [], cart = JSON.parse(localStorage.getItem('beOriginalFitCart')) || [];
     
-    const views = { catalog: document.getElementById('catalog-view'), detail: document.getElementById('product-detail-view'), cart: document.getElementById('cart-view'), terms: document.getElementById('terms-view') };
+    const views = { catalog: document.getElementById('catalog-view'), detail: document.getElementById('product-detail-view'), cart: document.getElementById('cart-view'), terms: document.getElementById('terms-view'), consejos: document.getElementById('consejos-view'), contacto: document.getElementById('contacto-view') };
     const productGrid = document.getElementById('product-grid');
-    // ... (El resto de los selectores del DOM están en el código completo)
+    const productDetailContainer = document.querySelector('#product-detail-view .product-detail-container');
+    const cartItemsContainer = document.getElementById('cart-items-container');
+    const cartSummary = document.getElementById('cart-summary');
+    const cartEmptyMessage = document.getElementById('cart-empty-message');
 
-    function parseCSV(text){/* ... */ return [];}
-    async function loadProductsData(){/* ... */}
+    function parseCSV(text){try{const lines=text.trim().split(/\r?\n/);if(lines.length<2)return[];const headers=lines[0].split(',').map(h=>h.trim().toLowerCase());return lines.slice(1).map(line=>{if(!line.trim())return null;const data=line.split(',');return headers.reduce((obj,header,i)=>{obj[header]=data[i]?data[i].trim():'';return obj},{})}).filter(Boolean)}catch(e){return[]}}
+    async function loadProductsData(){try{const res=await fetch(googleSheetCsvUrl,{cache:'no-cache'});if(!res.ok)throw new Error(`Error de red: ${res.status}`);const text=await res.text();if(!text.trim())throw new Error("CSV vacío.");allProducts=parseCSV(text).filter(p=>p.id&&p.nombre&&p.precio&&p.imagen_url&&p.stock&&p.categoria);if(allProducts.length===0)throw new Error("No se encontraron productos válidos.");renderCatalog()}catch(err){productGrid.innerHTML=`Error: ${err.message}`}}
     
-    function renderCatalog(filter = 'todos') {
-        productGrid.innerHTML = '';
-        const productsToDisplay = filter === 'todos' ? allProducts : allProducts.filter(p => p.categoria.toLowerCase() === filter.toLowerCase());
-        
-        productsToDisplay.forEach(p => {
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            card.dataset.id = p.id;
-            card.innerHTML = `<div class="card-inner"><div class="card-face"><img src="${p.imagen_url}"><div class="card-info-overlay"><h3>${p.nombre}</h3><p class="price">$${parseFloat(p.precio).toFixed(2)}</p></div><button class="quick-add-btn" data-id="${p.id}">+</button></div></div>`;
-            productGrid.appendChild(card);
-        });
-    }
+    function renderCatalog(filter = 'todos') { productGrid.innerHTML = ''; const productsToDisplay = filter === 'todos' ? allProducts : allProducts.filter(p => p.categoria.toLowerCase() === filter.toLowerCase()); productsToDisplay.forEach(p => { const card = document.createElement('div'); card.className = 'product-card'; card.dataset.id = p.id; card.innerHTML = `<div class="card-inner"><div class="card-face"><img src="${p.imagen_url}" alt="${p.nombre}"><div class="card-info-overlay"><h3>${p.nombre}</h3><p class="price">$${parseFloat(p.precio).toFixed(2)}</p></div><button class="quick-add-btn" data-id="${p.id}">+</button></div></div>`; productGrid.appendChild(card); }); }
+    function renderProductDetail(productId) { const p = allProducts.find(prod => prod.id === productId); if (!p) return; productDetailContainer.innerHTML = `<div class="detail-image-container"><img src="${p.imagen_url}"></div><div class="detail-info-container"><h2>${p.nombre}</h2><p class="price-tag">$${parseFloat(p.precio).toFixed(2)}</p><p class="description">${p.descripcion||''}</p><button class="add-to-cart-btn" data-id="${p.id}">Añadir al Carrito</button></div>`; }
+    
+    function renderCart() { cartItemsContainer.innerHTML = ''; if (cart.length === 0) { cartEmptyMessage.style.display = 'block'; cartSummary.style.display = 'none'; } else { cartEmptyMessage.style.display = 'none'; cartSummary.style.display = 'block'; let total = 0; cart.forEach(item => { const p = allProducts.find(prod => prod.id === item.id); if (!p) return; const itemTotal = item.quantity * parseFloat(p.precio); total += itemTotal; const el = document.createElement('div'); el.className = 'cart-item'; el.innerHTML = `<img src="${p.imagen_url}" class="cart-item-img"><div class="cart-item-info"><h4>${p.nombre}</h4></div><div class="cart-item-controls"><div class="quantity-control"><button class="quantity-btn" data-id="${item.id}" data-change="-1">-</button><span>${item.quantity}</span><button class="quantity-btn" data-id="${item.id}" data-change="1">+</button></div><p>$${itemTotal.toFixed(2)}</p><button class="remove-btn" data-id="${item.id}">×</button></div>`; cartItemsContainer.appendChild(el); }); cartSummary.innerHTML = `<h3>Total: $${total.toFixed(2)}</h3><div class="cart-summary-actions"><button class="checkout-btn secondary-btn back-button">Seguir Comprando</button><button class="checkout-btn">Proceder al Pago</button></div>`; } updateCartCounter(); }
+    
+    function updateQuantity(id, change) { const item = cart.find(i => i.id === id); if (!item) return; item.quantity += change; if (item.quantity <= 0) cart = cart.filter(i => i.id !== id); saveCart(); renderCart(); }
+    function addToCart(id) { const item = cart.find(i => i.id === id); if (item) item.quantity++; else cart.push({ id, quantity: 1 }); saveCart(); updateCartCounter(); }
+    function updateCartCounter() { const total = cart.reduce((sum, i) => sum + i.quantity, 0); document.querySelectorAll('.cart-counter').forEach(c => c.textContent = total); }
+    function saveCart() { localStorage.setItem('beOriginalFitCart', JSON.stringify(cart)); }
+    
+    function navigateTo(viewName, data = {}) { const url = viewName === 'detail' ? `#product/${data.id}` : (viewName === 'cart' ? '#cart' : (['terms','consejos','contacto'].includes(viewName) ? `#${viewName}` : '#')); history.pushState({ view: viewName, data }, '', url); renderState({ view: viewName, data }); }
+    function renderState(state) { state = state || { view: 'catalog', data:{} }; Object.values(views).forEach(v => v.classList.add('is-hidden')); const flippedCard = document.querySelector('.product-card.is-flipping'); if (flippedCard && state.view !== 'detail') { flippedCard.classList.remove('is-flipping'); } views[state.view].classList.remove('is-hidden'); if(state.view === 'detail') renderProductDetail(state.data.id); if(state.view === 'cart') renderCart(); }
 
-    // ... (El resto de las funciones de renderizado, carrito y navegación están en el código completo)
-    
-    // El código JS completo está incluido en el bloque de abajo.
+    window.addEventListener('popstate', (e) => renderState(e.state));
+
+    document.body.addEventListener('click', e => {
+        const target = e.target;
+        if (target.closest('.logo') || target.closest('.back-button')) { e.preventDefault(); navigateTo('catalog'); }
+        if (target.closest('.cart-icon-container')) { e.preventDefault(); navigateTo('cart'); }
+        const navLinkStatic = target.closest('.nav-link-static');
+        if(navLinkStatic) { e.preventDefault(); navigateTo(navLinkStatic.dataset.view); }
+        const filterLink = target.closest('.nav-link[data-filter]');
+        if(filterLink){ e.preventDefault(); renderCatalog(filterLink.dataset.filter); navigateTo('catalog'); }
+        const productCard = target.closest('.product-card');
+        if (productCard && !target.matches('.quick-add-btn')) { if (!productCard.classList.contains('is-flipping')) { productCard.classList.add('is-flipping'); setTimeout(() => navigateTo('detail', { id: productCard.dataset.id }), 400); } }
+        if(target.matches('.add-to-cart-btn, .quick-add-btn')){ e.stopPropagation(); addToCart(target.dataset.id); }
+        const cartContainer = target.closest('#cart-items-container');
+        if(cartContainer){ if (target.matches('.quantity-btn')) updateQuantity(target.dataset.id, parseInt(target.dataset.change, 10)); if (target.matches('.remove-btn')) { cart = cart.filter(i => i.id !== target.dataset.id); saveCart(); renderCart(); } }
+    });
+
+    loadProductsData().then(() => { const hash = location.hash; if(hash.startsWith('#product/')) { renderState({view: 'detail', data: {id: hash.split('/')[1]}}); } else if (hash.startsWith('#')) { const view = hash.substring(1); if(views[view]) renderState({view: view}); else renderState({view:'catalog'}); } else { renderState({view: 'catalog'}); } });
+    updateCartCounter();
 });
 </script>
 </body>
