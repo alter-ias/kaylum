@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel para Añadir Posts</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; background-color: #2c3e50; color: #ecf0f1; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background-color: #34495e; padding: 30px; border-radius: 8px; }
+        h1 { text-align: center; margin-bottom: 20px; }
+        label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #7f8c8d; background-color: #2c3e50; color: #ecf0f1; font-size: 1rem; }
+        textarea { min-height: 100px; resize: vertical; }
+        .field-group { display: none; }
+        .field-group.is-active { display: block; }
+        button { width: 100%; padding: 15px; margin-top: 20px; background-color: #16a085; color: white; border: none; border-radius: 4px; font-size: 1.2rem; cursor: pointer; }
+        button:disabled { background-color: #7f8c8d; }
+        #status-message { margin-top: 20px; text-align: center; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Añadir Nuevo Post</h1>
+        <form id="blog-form">
+            <label for="category-select">Categoría:</label>
+            <select id="category-select" required>
+                <option value="">-- Elige una categoría --</option>
+                <option value="dieta">Alimentación</option>
+                <option value="rutinas">Ejercicios</option>
+                <option value="consejos">Consejos</option>
+            </select>
+
+            <div id="common-fields" class="field-group">
+                <label for="titulo">Título:</label>
+                <input type="text" id="titulo" required>
+                <label for="imagen_url">URL de la Imagen:</label>
+                <input type="url" id="imagen_url" required>
+            </div>
+
+            <div id="dieta-fields" class="field-group">
+                <label for="ingredientes">Ingredientes (uno por línea):</label>
+                <textarea id="ingredientes"></textarea>
+                <label for="receta">Receta:</label>
+                <textarea id="receta"></textarea>
+            </div>
+            
+            <div id="rutinas-fields" class="field-group">
+                <label for="ejercicios">Ejercicios (uno por línea):</label>
+                <textarea id="ejercicios"></textarea>
+            </div>
+
+            <div id="consejos-fields" class="field-group">
+                <label for="texto">Texto del Consejo:</label>
+                <textarea id="texto"></textarea>
+            </div>
+            
+            <button type="submit">Añadir Post</button>
+        </form>
+        <div id="status-message"></div>
+    </div>
+
+    <script>
+        const categorySelect = document.getElementById('category-select');
+        const fieldGroups = document.querySelectorAll('.field-group');
+        const form = document.getElementById('blog-form');
+        const statusMessage = document.getElementById('status-message');
+        const submitButton = form.querySelector('button');
+
+        // URL del script que crearemos en el Paso 2
+        const SCRIPT_URL = 'URL_DE_TU_NUEVO_SCRIPT_AQUI'; 
+
+        categorySelect.addEventListener('change', () => {
+            const selectedCategory = categorySelect.value;
+            fieldGroups.forEach(group => {
+                if (group.id === `${selectedCategory}-fields` || group.id === 'common-fields') {
+                    group.classList.add('is-active');
+                } else {
+                    group.classList.remove('is-active');
+                }
+            });
+        });
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            submitButton.disabled = true;
+            statusMessage.textContent = 'Enviando...';
+
+            const category = categorySelect.value;
+            const data = {
+                category: category,
+                titulo: document.getElementById('titulo').value,
+                imagen_url: document.getElementById('imagen_url').value
+            };
+
+            if (category === 'dieta') {
+                data.ingredientes = document.getElementById('ingredientes').value;
+                data.receta = document.getElementById('receta').value;
+            } else if (category === 'rutinas') {
+                data.ejercicios = document.getElementById('ejercicios').value;
+            } else if (category === 'consejos') {
+                data.texto = document.getElementById('texto').value;
+            }
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Importante para evitar problemas de CORS con Apps Script
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => {
+                statusMessage.textContent = '¡Post añadido con éxito!';
+                statusMessage.style.color = '#1abc9c';
+                form.reset();
+                fieldGroups.forEach(group => group.classList.remove('is-active'));
+            })
+            .catch(error => {
+                statusMessage.textContent = 'Error al añadir el post.';
+                statusMessage.style.color = '#e74c3c';
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                submitButton.disabled = false;
+            });
+        });
+    </script>
+</body>
+</html>
