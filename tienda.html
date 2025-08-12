@@ -22,6 +22,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
         body { color: var(--text-color); font-family: 'Poppins', sans-serif; background-color: var(--background-color); min-height: 100vh; }
+        body.mobile-menu-open { overflow: hidden; }
         #background-video { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; filter: brightness(0.2); }
         .page-wrapper { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh;}
         .view-container { width: 100%; display: block; flex-grow: 1; }
@@ -52,16 +53,21 @@
         .quick-add-btn { position: absolute; top: 10px; right: 10px; background-color: rgba(255,255,255,0.8); color: var(--background-color); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; opacity: 0; transition: opacity 0.3s; z-index: 5; font-size: 1.5rem; font-weight: bold; }
         .product-card:hover .quick-add-btn { opacity: 1; }
         #product-detail-view main, #cart-view main, #terms-view main, #vida-saludable-view main, #contacto-view main, .blog-view main { max-width: 900px; margin: 2rem auto; padding: 40px; background: var(--surface-color); border-radius: 15px; }
-        .main-view-title { text-align: center; margin-bottom: 1.5rem; font-size: 2.5rem; }
-        .view-banner-image { width: 100%; max-height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 2rem; }
         .product-detail-container { display: flex; gap: 40px; }
         .detail-image-container { flex: 1 1 50%; }
         .detail-image-container img { width: 100%; border-radius: 10px; }
         .detail-info-container { flex: 1 1 50%; }
+        .size-selector { margin-top: 1.5rem; }
+        .size-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+        .size-btn { background: none; border: 1px solid var(--border-color); color: var(--text-color); padding: 10px 15px; border-radius: 8px; cursor: pointer; }
+        .size-btn.selected { background-color: var(--primary-color); color: var(--background-color); border-color: var(--primary-color); }
+        .add-to-cart-btn { width: 100%; margin-top: 1.5rem; padding: 15px; border-radius: 30px; }
+        .main-view-title { text-align: center; margin-bottom: 2rem; font-size: 2.5rem; }
         .cart-item { display: flex; align-items: center; gap: 20px; padding: 15px 0; border-bottom: 1px solid var(--border-color); }
         .cart-item:last-child { border-bottom: none; }
         .cart-item-img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; }
         .cart-item-info { flex-grow: 1; }
+        .cart-item-info .talla { font-size: 0.9rem; color: var(--secondary-text-color); }
         .cart-item-controls { display: flex; align-items: center; gap: 15px; }
         .quantity-control { display: flex; align-items: center; gap: 10px; }
         .quantity-btn { background: none; border: 1px solid var(--border-color); color: var(--primary-color); width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; }
@@ -78,11 +84,33 @@
         .hub-card:hover { transform: translateY(-10px); }
         .hub-card img { width: 100%; height: 100%; object-fit: cover; }
         .hub-card h3 { position: absolute; bottom: 20px; left: 20px; font-size: 1.8rem; color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.7); }
+        .post-card { border-bottom: 1px solid var(--border-color); padding-bottom: 30px; margin-bottom: 30px; }
+        .post-card:last-child { border-bottom: none; margin-bottom: 0; }
+        .post-card img { width: 100%; height: 225px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem; }
+        .post-content h3 { font-size: 1.8rem; margin-bottom: 1rem; color: var(--primary-color); }
+        .post-content h4 { font-size: 1rem; margin-top: 1.5rem; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
+        .post-content pre, .post-content p { white-space: pre-wrap; line-height: 1.6; color: var(--secondary-text-color); }
         .main-footer { text-align: center; padding: 2rem; margin-top: auto; background-color: rgba(18, 18, 18, 0.5); border-top: 1px solid var(--border-color); }
         .social-link svg { width: 30px; height: 30px; fill: var(--secondary-text-color); }
         .spinner { display: block; margin: 100px auto; width: 50px; height: 50px; border: 5px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        @media (max-width: 900px) { #product-grid { grid-template-columns: repeat(2, 1fr); } .product-detail-container, .cart-item { flex-direction: column; } nav ul { display: none; } }
+        
+        #mobile-nav-bar, #mobile-nav-panel, #mobile-nav-overlay { display: none; }
+        
+        @media (max-width: 900px) { 
+            #product-grid { grid-template-columns: repeat(2, 1fr); } 
+            .product-detail-container, .cart-item { flex-direction: column; } 
+            .header-left nav { display: none; }
+            #mobile-nav-bar { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background-color: rgba(30, 30, 30, 0.9); backdrop-filter: blur(10px); border-top: 1px solid var(--border-color); justify-content: space-around; align-items: center; padding: 10px 0; z-index: 1000; }
+            .mobile-nav-btn { background: none; border: none; color: var(--text-color); display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.75rem; padding: 5px; }
+            #mobile-nav-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 1001; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+            #mobile-nav-overlay.is-open { display: block; opacity: 1; pointer-events: auto; }
+            #mobile-nav-panel { display: block; position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--surface-color); border-top-left-radius: 20px; border-top-right-radius: 20px; z-index: 1002; padding: 20px; padding-bottom: 40px; transform: translateY(100%); transition: transform 0.3s ease-in-out; }
+            #mobile-nav-panel.is-open { transform: translateY(0); }
+            #mobile-nav-panel a, #mobile-nav-panel h4 { display: block; padding: 15px; text-decoration: none; color: var(--text-color); font-weight: 600; border-bottom: 1px solid var(--border-color); }
+            #mobile-nav-panel h4 { color: var(--primary-color); font-size: 0.9rem; text-transform: uppercase; padding-left: 5px; border-bottom: none; }
+            #mobile-nav-panel a:last-child { border-bottom: none; }
+        }
     </style>
 </head>
 <body>
@@ -111,17 +139,32 @@
             </div>
         </header>
 
-        <div id="catalog-view" class="view-container"><main><h2 class="main-view-title">Nuestros Productos</h2><img src="./assets/mayfit/img/productos.png" alt="Nuestros Productos" class="view-banner-image"><div id="product-grid"><div class="spinner"></div></div></main></div>
-        <div id="product-detail-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><div class="product-detail-container"></div></main></div>
-        <div id="cart-view" class="view-container is-hidden"><main><h2 class="main-view-title">Tu Carrito</h2><img src="./assets/mayfit/img/carrito.png" alt="Carrito" class="view-banner-image"><div id="cart-items-container"></div><div id="cart-summary"></div><div id="cart-empty-message" style="display: none;"><h3>Tu carrito está vacío</h3><p>Añade productos para verlos aquí.</p></div></main></div>
+        <div id="catalog-view" class="view-container"><main><div id="product-grid"><div class="spinner"></div></div></main></div>
+        <div id="product-detail-view" class="view-container is-hidden"><main><div class="product-detail-container"></div></main></div>
+        <div id="cart-view" class="view-container is-hidden"><main><h2 class="main-view-title">Tu Carrito</h2><div id="cart-items-container"></div><div id="cart-summary"></div><div id="cart-empty-message" style="display: none;"><h3>Tu carrito está vacío</h3><p>Añade productos para verlos aquí.</p></div></main></div>
         <div id="vida-saludable-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Vida Saludable</h2><div class="hub-grid"><div class="hub-card" data-view="dieta"><img src="./assets/mayfit/img/dieta.png"><h3>Alimentación</h3></div><div class="hub-card" data-view="rutinas"><img src="./assets/mayfit/img/rutina.png"><h3>Ejercicios</h3></div><div class="hub-card" data-view="consejos"><img src="./assets/mayfit/img/consejos.png"><h3>Consejos</h3></div></div></main></div>
         <div id="dieta-view" class="blog-view view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Alimentación</h2><div class="posts-container"></div></main></div>
         <div id="rutinas-view" class="blog-view view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Ejercicios</h2><div class="posts-container"></div></main></div>
         <div id="consejos-view" class="blog-view view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Consejos</h2><div class="posts-container"></div></main></div>
-        <div id="terms-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Términos y Políticas</h2><img src="./assets/mayfit/img/terminos.png" alt="Términos" class="view-banner-image"><p><strong>POLÍTICAS DE CAMBIOS Y DEVOLUCIONES</strong><br>Aceptamos cambios de talla y/o color en un plazo no mayor a 7 días hábiles...</p></main></div>
-        <div id="contacto-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Contacto</h2><img src="./assets/mayfit/img/contacto.png" alt="Contacto" class="view-banner-image"><p>Información de contacto...</p></main></div>
+        <div id="terms-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Términos y Políticas de BOriginalFit</h2><p><strong>POLÍTICAS DE CAMBIOS Y DEVOLUCIONES</strong><br>Aceptamos cambios de talla y/o color en un plazo no mayor a 7 días hábiles...</p></main></div>
+        <div id="contacto-view" class="view-container is-hidden"><main><button class="back-button">&larr;</button><h2 class="main-view-title">Contacto</h2><p>Información de contacto...</p></main></div>
         
         <footer class="main-footer"><a href="https://www.instagram.com/beoriginalfit/" target="_blank" class="social-link"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z" /></svg></a></footer>
+    </div>
+    
+    <div id="mobile-nav-overlay"></div>
+    <nav id="mobile-nav-bar">
+        <button class="mobile-nav-btn nav-link" data-filter="todos">Productos</button>
+        <button class="mobile-nav-btn nav-link-static" data-view="vida-saludable">Vida Saludable</button>
+        <button class="mobile-nav-btn" id="mobile-menu-toggle">Menú ☰</button>
+    </nav>
+    <div id="mobile-nav-panel">
+        <h4>Categorías</h4>
+        <a href="#" class="nav-link" data-filter="Leggins">Leggins</a><a href="#" class="nav-link" data-filter="Top">Top</a><a href="#" class="nav-link" data-filter="Sudadera">Sudadera</a>
+        <h4 style="margin-top: 20px;">Más</h4>
+        <a href="#" class="nav-link-static" data-view="contacto">Contacto</a>
+        <a href="#" class="nav-link-static" data-view="terms">Términos</a>
+        <a href="#" id="mobile-menu-close" style="text-align:center; color: var(--secondary-text-color);">Cerrar</a>
     </div>
 
 <script>
@@ -139,19 +182,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const cartItemsContainer = views.cart.querySelector('#cart-items-container');
     const cartSummary = views.cart.querySelector('#cart-summary');
     const cartEmptyMessage = views.cart.querySelector('#cart-empty-message');
+    const mobileMenuToggle = document.getElementById('mobile-menu-toggle'), mobileMenuClose = document.getElementById('mobile-menu-close'), mobileNavPanel = document.getElementById('mobile-nav-panel'), mobileNavOverlay = document.getElementById('mobile-nav-overlay');
 
-    function parseCSVWithMultiline(csvText) {
-        const rows = []; let currentRow = []; let field = ''; let inQuotes = false;
-        csvText = csvText.replace(/\r\n/g, '\n');
-        for (let i = 0; i < csvText.length; i++) {
-            const char = csvText[i];
-            if (inQuotes) { if (char === '"') { if (i + 1 < csvText.length && csvText[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; } } else { field += char; } } else { if (char === '"') { inQuotes = true; } else if (char === ',') { currentRow.push(field); field = ''; } else if (char === '\n') { currentRow.push(field); rows.push(currentRow); currentRow = []; field = ''; } else { field += char; } }
-        }
-        if (field || currentRow.length > 0) { currentRow.push(field); rows.push(currentRow); }
-        if (rows.length < 2) return [];
-        const headers = rows[0].map(h => h.trim().toLowerCase());
-        return rows.slice(1).map(row => { const obj = {}; headers.forEach((header, i) => { obj[header] = row[i] ? row[i].trim() : ''; }); return obj; });
-    }
+    function parseCSVWithMultiline(csvText) { const rows = []; let currentRow = []; let field = ''; let inQuotes = false; csvText = csvText.replace(/\r\n/g, '\n'); for (let i = 0; i < csvText.length; i++) { const char = csvText[i]; if (inQuotes) { if (char === '"') { if (i + 1 < csvText.length && csvText[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; } } else { field += char; } } else { if (char === '"') { inQuotes = true; } else if (char === ',') { currentRow.push(field); field = ''; } else if (char === '\n') { currentRow.push(field); rows.push(currentRow); currentRow = []; field = ''; } else { field += char; } } } if (field || currentRow.length > 0) { currentRow.push(field); rows.push(currentRow); } if (rows.length < 2) return []; const headers = rows[0].map(h => h.trim().toLowerCase()); return rows.slice(1).map(row => { const obj = {}; headers.forEach((header, i) => { obj[header] = row[i] ? row[i].trim() : ''; }); return obj; }); }
     async function loadAllData(){try{const reqs=Object.entries(googleSheetUrls).map(([key,url])=>fetch(url,{cache:'no-cache'}).then(res=>res.text()).then(text=>({key,data:parseCSVWithMultiline(text)})));const results=await Promise.all(reqs);results.forEach(({key,data})=>allData[key]=data);renderCatalog()}catch(err){productGrid.innerHTML=`Error: ${err.message}`}}
     function renderCatalog(filter = 'todos') { productGrid.innerHTML = ''; const productsToDisplay = filter === 'todos' ? allData.products : allData.products.filter(p => p.categoria && p.categoria.toLowerCase() === filter.toLowerCase()); productsToDisplay.forEach(p => { const card = document.createElement('div'); card.className = 'product-card'; card.dataset.id = p.id; card.innerHTML = `<div class="card-inner"><div class="card-face"><img src="${p.imagen_url}" alt="${p.nombre}"><div class="card-info-overlay"><h3>${p.nombre}</h3><p class="price">$${parseFloat(p.precio).toFixed(2)}</p></div><button class="quick-add-btn" data-id="${p.id}">+</button></div></div>`; productGrid.appendChild(card); }); }
     function renderProductDetail(productId) { const p = allData.products.find(prod => prod.id === productId); if (!p) return; let tallasHTML = ''; const tallas = (p.talla || '').split(',').map(t => t.trim()); if (tallas.length > 1 && tallas[0]) { tallasHTML = `<div class="size-selector"><h4>Talla:</h4><div class="size-buttons">${tallas.map((t, i) => `<button class="size-btn ${i === 0 ? 'selected' : ''}" data-size="${t}">${t}</button>`).join('')}</div></div>`; } else if (tallas[0]) { tallasHTML = `<div class="size-selector"><h4>Talla:</h4><p>${p.talla}</p></div>`; } productDetailContainer.innerHTML = `<div class="detail-image-container"><img src="${p.imagen_url}"></div><div class="detail-info-container"><h2>${p.nombre}</h2><p class="price-tag">$${parseFloat(p.precio).toFixed(2)}</p>${tallasHTML}<button class="add-to-cart-btn checkout-btn" data-id="${p.id}">Añadir al Carrito</button><p class="description" style="margin-top:1.5rem;">${p.descripcion||''}</p></div>`; }
@@ -163,15 +196,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function saveCart() { localStorage.setItem('beOriginalFitCart', JSON.stringify(cart)); }
     function navigateTo(viewName, data = {}) { const url = viewName === 'detail' ? `#product/${data.id}` : (Object.keys(views).includes(viewName) && viewName !== 'catalog' ? `#${viewName}` : '#'); history.pushState({ view: viewName, data }, '', url); renderState({ view: viewName, data }); }
     function renderState(state) { state = state || { view: 'catalog', data:{} }; Object.values(views).forEach(v => v.classList.add('is-hidden')); const flippedCard = document.querySelector('.product-card.is-flipping'); if (flippedCard && state.view !== 'detail') { flippedCard.classList.remove('is-flipping'); } const activeView = views[state.view] || views.catalog; activeView.classList.remove('is-hidden'); if(state.view === 'detail') renderProductDetail(state.data.id); if(state.view === 'cart') renderCart(); if(state.view.match(/dieta|rutinas|consejos/)) renderBlogList(state.view); }
+    const toggleMobileMenu = () => { mobileNavPanel.classList.toggle('is-open'); mobileNavOverlay.classList.toggle('is-open'); document.body.classList.toggle('mobile-menu-open'); };
+    mobileMenuToggle.addEventListener('click', toggleMobileMenu);
+    mobileMenuClose.addEventListener('click', toggleMobileMenu);
+    mobileNavOverlay.addEventListener('click', toggleMobileMenu);
     window.addEventListener('popstate', e => renderState(e.state));
     document.body.addEventListener('click', e => {
         const target = e.target;
         if (target.closest('.logo') || target.closest('.back-button')) { e.preventDefault(); navigateTo('catalog'); }
         if (target.closest('.cart-icon-container')) { e.preventDefault(); navigateTo('cart'); }
-        const navLinkStatic = target.closest('.nav-link-static');
-        if(navLinkStatic) { e.preventDefault(); navigateTo(navLinkStatic.dataset.view); }
-        const filterLink = target.closest('.nav-link[data-filter]');
-        if(filterLink){ e.preventDefault(); renderCatalog(filterLink.dataset.filter); navigateTo('catalog'); }
+        const navLink = target.closest('.nav-link, .nav-link-static');
+        if(navLink){ e.preventDefault(); if (navLink.dataset.view) navigateTo(navLink.dataset.view); if (navLink.dataset.filter) { renderCatalog(navLink.dataset.filter); navigateTo('catalog'); } if(mobileNavPanel.classList.contains('is-open')) toggleMobileMenu(); }
         const hubCard = target.closest('.hub-card');
         if(hubCard){ e.preventDefault(); navigateTo(hubCard.dataset.view); }
         const productCard = target.closest('.product-card');
