@@ -143,8 +143,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const cartSummary = views.cart.querySelector('#cart-summary');
     const cartEmptyMessage = views.cart.querySelector('#cart-empty-message');
 
-    function parseCSV(text){try{const lines=text.trim().split(/\r?\n/);if(lines.length<2)return[];const headers=lines[0].split(',').map(h=>h.trim().toLowerCase());return lines.slice(1).map(line=>{if(!line.trim())return null;const data=line.split(',');return headers.reduce((obj,header,i)=>{obj[header]=data[i]?data[i].trim():'';return obj},{})}).filter(Boolean)}catch(e){return[]}}
-    async function loadAllData(){try{const reqs=Object.entries(googleSheetUrls).map(([key,url])=>{if(url.startsWith('URL_DE'))return Promise.resolve({key,data:[]});return fetch(url,{cache:'no-cache'}).then(res=>res.text()).then(text=>({key,data:parseCSV(text)}))});const results=await Promise.all(reqs);results.forEach(({key,data})=>allData[key]=data);renderCatalog()}catch(err){productGrid.innerHTML=`Error: ${err.message}`}}
+    function parseCSVWithMultiline(csvText) {
+        const rows = [];
+        let currentRow = [];
+        let field = '';
+        let inQuotes = false;
+        csvText = csvText.replace(/\r\n/g, '\n');
+        for (let i = 0; i < csvText.length; i++) {
+            const char = csvText[i];
+            if (inQuotes) {
+                if (char === '"') {
+                    if (i + 1 < csvText.length && csvText[i + 1] === '"') {
+                        field += '"'; i++;
+                    } else { inQuotes = false; }
+                } else { field += char; }
+            } else {
+                if (char === '"') { inQuotes = true;
+                } else if (char === ',') { currentRow.push(field); field = '';
+                } else if (char === '\n') {
+                    currentRow.push(field);
+                    rows.push(currentRow);
+                    currentRow = []; field = '';
+                } else { field += char; }
+            }
+        }
+        if (field || currentRow.length > 0) { currentRow.push(field); rows.push(currentRow); }
+        const headers = rows[0].map(h => h.trim().toLowerCase());
+        return rows.slice(1).map(row => {
+            const obj = {};
+            headers.forEach((header, i) => { obj[header] = row[i] ? row[i].trim() : ''; });
+            return obj;
+        });
+    }
+
+    async function loadAllData(){try{const reqs=Object.entries(googleSheetUrls).map(([key,url])=>{if(url.startsWith('URL_DE'))return Promise.resolve({key,data:[]});return fetch(url,{cache:'no-cache'}).then(res=>res.text()).then(text=>({key,data:parseCSVWithMultiline(text)}))});const results=await Promise.all(reqs);results.forEach(({key,data})=>allData[key]=data);renderCatalog()}catch(err){productGrid.innerHTML=`Error: ${err.message}`}}
     function renderCatalog(filter = 'todos') { productGrid.innerHTML = ''; const productsToDisplay = filter === 'todos' ? allData.products : allData.products.filter(p => p.categoria && p.categoria.toLowerCase() === filter.toLowerCase()); productsToDisplay.forEach(p => { const card = document.createElement('div'); card.className = 'product-card'; card.dataset.id = p.id; card.innerHTML = `<div class="card-inner"><div class="card-face"><img src="${p.imagen_url}" alt="${p.nombre}"><div class="card-info-overlay"><h3>${p.nombre}</h3><p class="price">$${parseFloat(p.precio).toFixed(2)}</p></div><button class="quick-add-btn" data-id="${p.id}">+</button></div></div>`; productGrid.appendChild(card); }); }
     function renderProductDetail(productId) { const p = allData.products.find(prod => prod.id === productId); if (!p) return; let tallasHTML = ''; const tallas = (p.talla || '').split(',').map(t => t.trim()); if (tallas.length > 1 && tallas[0]) { tallasHTML = `<div class="size-selector"><h4>Talla:</h4><div class="size-buttons">${tallas.map((t, i) => `<button class="size-btn ${i === 0 ? 'selected' : ''}" data-size="${t}">${t}</button>`).join('')}</div></div>`; } else if (tallas[0]) { tallasHTML = `<div class="size-selector"><h4>Talla:</h4><p>${p.talla}</p></div>`; } productDetailContainer.innerHTML = `<div class="detail-image-container"><img src="${p.imagen_url}"></div><div class="detail-info-container"><h2>${p.nombre}</h2><p class="price-tag">$${parseFloat(p.precio).toFixed(2)}</p>${tallasHTML}<button class="add-to-cart-btn checkout-btn" data-id="${p.id}">Añadir al Carrito</button><p class="description" style="margin-top:1.5rem;">${p.descripcion||''}</p></div>`; }
     function renderCart() { cartItemsContainer.innerHTML = ''; if (cart.length === 0) { cartEmptyMessage.style.display = 'block'; cartSummary.style.display = 'none'; } else { cartEmptyMessage.style.display = 'none'; cartSummary.style.display = 'block'; let total = 0; cart.forEach(item => { const p = allData.products.find(prod => prod.id === item.id); if (!p) return; const itemTotal = item.quantity * parseFloat(p.precio); total += itemTotal; const el = document.createElement('div'); el.className = 'cart-item'; el.innerHTML = `<img src="${p.imagen_url}" class="cart-item-img"><div class="cart-item-info"><h4>${p.nombre}</h4><p class="talla">Talla: ${item.size}</p></div><div class="cart-item-controls"><div class="quantity-control"><button class="quantity-btn" data-cart-item-id="${item.cartItemId}" data-change="-1">-</button><span>${item.quantity}</span><button class="quantity-btn" data-cart-item-id="${item.cartItemId}" data-change="1">+</button></div><p>$${itemTotal.toFixed(2)}</p><button class="remove-btn" data-cart-item-id="${item.cartItemId}">×</button></div>`; cartItemsContainer.appendChild(el); }); cartSummary.innerHTML = `<h3>Total: $${total.toFixed(2)}</h3><div class="cart-summary-actions"><button class="checkout-btn">Proceder al Pago</button><button class="secondary-btn back-button">Seguir Comprando</button></div>`; } updateCartCounter(); }
