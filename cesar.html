@@ -157,10 +157,20 @@
             margin: 0 auto;
             text-align: center;
             border-bottom: 1px solid rgba(0,0,0,0.05); /* Separador sutil */
+            padding-bottom: 80px; /* Espacio extra para una división clara */
         }
 
         .project-section:last-of-type {
             border-bottom: none;
+            padding-bottom: 50px; /* Menos padding al final de la última sección */
+        }
+
+        .section-image {
+            max-width: 100%; /* Asegura que la imagen no se desborde */
+            height: auto;
+            border-radius: 12px; /* Bordes ligeramente redondeados como la imagen original */
+            margin-bottom: 40px; /* Espacio entre la imagen y el texto */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* Sutil sombra para dar profundidad */
         }
 
         .level-letter {
@@ -256,6 +266,10 @@
                 padding: 60px 15px;
             }
 
+            .section-image {
+                margin-bottom: 30px;
+            }
+
             .level-letter {
                 font-size: 6rem;
             }
@@ -331,6 +345,7 @@
         </section>
 
         <section id="level-a" class="project-section">
+            <img src="assets/arg/img/alan.png" alt="Imagen representativa de Alan" class="section-image">
             <h2 class="level-letter">A</h2>
             <h3 class="level-name">ALAN - El Gesto Poético y la Voz del Escritor</h3>
             <p>
@@ -342,6 +357,7 @@
         </section>
 
         <section id="level-r" class="project-section">
+            <img src="assets/arg/img/ruiz.png" alt="Imagen representativa de Ruiz" class="section-image">
             <h2 class="level-letter">R</h2>
             <h3 class="level-name">RUIZ - El Oficio y el Rigor Periodístico</h3>
             <p>
@@ -353,6 +369,7 @@
         </section>
 
         <section id="level-g" class="project-section">
+            <img src="assets/arg/img/galicia.png" alt="Imagen representativa de Galicia" class="section-image">
             <h2 class="level-letter">G</h2>
             <h3 class="level-name">GALICIA - El Impacto de la Palabra</h3>
             <p>
