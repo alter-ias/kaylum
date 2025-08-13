@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALAN RUIZ GALICIA - Poeta, Escritor y Periodista</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Variables de color basadas en la imagen */
+        :root {
+            --background-color: #F0E8DD; /* Beige suave del fondo */
+            --text-color: #3F4A59;       /* Azul oscuro/grisáceo para texto principal */
+            --primary-color: #3B7A8B;    /* Teal/azul-verde del bailarín/hojas */
+            --secondary-color: #D38D7D;  /* Coral/melocotón de las hojas/formas */
+            --light-text-color: #6C7A89; /* Gris azulado más claro para texto secundario */
+            --white-ish: #FDF9EC;        /* Color similar al sol/burbuja */
+        }
+
+        /* Reset y estilos básicos */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden; /* Evita el scroll horizontal */
+        }
+
+        .page-wrapper {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Encabezado */
+        .main-header {
+            background-color: rgba(240, 232, 221, 0.9); /* Fondo beige con transparencia */
+            backdrop-filter: blur(5px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .site-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 30px;
+        }
+
+        nav a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 600;
+            padding: 5px 0;
+            position: relative;
+            transition: color 0.3s ease;
+        }
+
+        nav a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: var(--primary-color);
+            transition: width 0.3s;
+        }
+
+        nav a:hover {
+            color: var(--primary-color);
+        }
+
+        nav a:hover::after {
+            width: 100%;
+        }
+
+        /* Sección Hero (Imagen Principal) */
+        .hero-section {
+            background-image: url('assets/mayfit/img/original-image.jpeg'); /* Usamos la imagen original */
+            background-size: cover;
+            background-position: center center;
+            height: 500px; /* Altura del banner */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: var(--white-ish); /* Texto blanco para contraste */
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.4) 100%); /* Sutil gradiente oscuro */
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            padding: 20px;
+            max-width: 800px;
+        }
+
+        .hero-content h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            line-height: 1.2;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .hero-content p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+
+        /* Secciones A, R, G */
+        .project-section {
+            padding: 80px 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+            border-bottom: 1px solid rgba(0,0,0,0.05); /* Separador sutil */
+        }
+
+        .project-section:last-of-type {
+            border-bottom: none;
+        }
+
+        .level-letter {
+            font-family: 'Playfair Display', serif;
+            font-size: 8rem; /* Letra grande */
+            font-weight: 700;
+            color: var(--primary-color); /* Color teal */
+            line-height: 1;
+            margin-bottom: 20px;
+            position: relative;
+            display: inline-block; /* Para aplicar transformaciones si es necesario */
+            text-shadow: 3px 3px 5px rgba(0,0,0,0.1);
+        }
+
+        .level-name {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .project-section p {
+            font-size: 1.1rem;
+            color: var(--light-text-color);
+            margin-bottom: 20px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Footer */
+        .main-footer {
+            text-align: center;
+            padding: 2rem;
+            margin-top: auto;
+            background-color: var(--primary-color); /* Fondo del color teal */
+            color: var(--white-ish); /* Texto claro */
+        }
+
+        .main-footer a {
+            color: var(--white-ish);
+            text-decoration: none;
+            margin: 0 10px;
+            transition: opacity 0.3s ease;
+        }
+
+        .main-footer a:hover {
+            opacity: 0.8;
+        }
+
+        /* --- Mobile Styles --- */
+        #mobile-nav-bar, #mobile-nav-panel, #mobile-nav-overlay {
+            display: none; /* Ocultamos por defecto, se mostrarán con media query */
+        }
+
+        @media (max-width: 768px) {
+            .main-header {
+                padding: 1rem 1rem;
+                flex-direction: column; /* Apila elementos en móvil */
+                align-items: flex-start;
+            }
+
+            .header-left {
+                width: 100%;
+                justify-content: space-between;
+                margin-bottom: 15px; /* Espacio antes del menú */
+            }
+
+            .main-header nav {
+                display: none; /* Oculta el menú desktop en móvil */
+            }
+
+            .site-title {
+                font-size: 1.5rem;
+            }
+
+            .hero-section {
+                height: 350px;
+            }
+
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-content p {
+                font-size: 1rem;
+            }
+
+            .project-section {
+                padding: 60px 15px;
+            }
+
+            .level-letter {
+                font-size: 6rem;
+            }
+
+            .level-name {
+                font-size: 2rem;
+            }
+
+            .project-section p {
+                font-size: 1rem;
+            }
+
+            /* Mobile Navigation (Adaptado para presentación) */
+            #mobile-nav-bar {
+                display: flex;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background-color: var(--primary-color); /* Teal */
+                justify-content: space-around;
+                align-items: center;
+                padding: 10px 0;
+                z-index: 1000;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            }
+
+            .mobile-nav-btn {
+                background: none;
+                border: none;
+                color: var(--white-ish);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+                font-size: 0.8rem;
+                padding: 5px;
+                text-decoration: none;
+                font-weight: 600;
+            }
+
+            .mobile-nav-btn:hover {
+                opacity: 0.8;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <header class="main-header">
+            <div class="header-left">
+                <span class="site-title">ALAN RUIZ GALICIA</span>
+                <nav class="desktop-nav">
+                    <ul>
+                        <li><a href="#level-a">A - Alan</a></li>
+                        <li><a href="#level-r">R - Ruiz</a></li>
+                        <li><a href="#level-g">G - Galicia</a></li>
+                    </ul>
+                </nav>
+            </div>
+            <!-- Si hay un perfil de Instagram relevante para su trabajo de escritor/periodista, puedes añadirlo aquí -->
+            <!-- <a href="https://www.instagram.com/alanruizgalicia/" target="_blank" style="color: var(--primary-color); text-decoration: none; font-weight: 600;">
+                <svg style="width:24px;height:24px;vertical-align: middle; margin-right: 5px;" viewBox="0 0 24 24"><path fill="currentColor" d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z" /></svg>
+                Instagram
+            </a> -->
+        </header>
+
+        <section class="hero-section">
+            <div class="hero-content">
+                <h1>ALAN RUIZ GALICIA</h1>
+                <p>La palabra como eco: Poesía, Narrativa y Periodismo en la voz de Alan Ruiz Galicia.</p>
+            </div>
+        </section>
+
+        <section id="level-a" class="project-section">
+            <h2 class="level-letter">A</h2>
+            <h3 class="level-name">ALAN - El Gesto Poético y la Voz del Escritor</h3>
+            <p>
+                "Alan" representa la génesis de su expresión, la chispa que enciende la poesía y la narrativa.
+                Aquí exploramos los orígenes de su voz literaria, las inspiraciones que nutren sus versos y relatos,
+                y la forma en que sus palabras buscan capturar la esencia de la experiencia humana.
+                Es la inmersión en la sensibilidad y la aguda observación que definen su estilo único.
+            </p>
+        </section>
+
+        <section id="level-r" class="project-section">
+            <h2 class="level-letter">R</h2>
+            <h3 class="level-name">RUIZ - El Oficio y el Rigor Periodístico</h3>
+            <p>
+                "Ruiz" simboliza el trabajo constante, la disciplina en el arte de escribir y el compromiso con la verdad.
+                Esta sección ahonda en el proceso de investigación periodística, la estructura de sus crónicas y artículos,
+                así como la meticulosidad en la búsqueda de la palabra precisa. Es el rigor del oficio que sustenta
+                tanto sus piezas informativas como la profundidad de sus ficciones y poemarios.
+            </p>
+        </section>
+
+        <section id="level-g" class="project-section">
+            <h2 class="level-letter">G</h2>
+            <h3 class="level-name">GALICIA - El Impacto de la Palabra</h3>
+            <p>
+                "Galicia" encarna la proyección de su obra, la resonancia de sus textos y el diálogo que establece con el lector.
+                Aquí se destacan sus publicaciones, reconocimientos y cómo sus escritos, ya sean poemas, cuentos o reportajes,
+                contribuyen al panorama cultural y periodístico. Es la voz que trasciende las páginas para provocar reflexión,
+                emoción y un entendimiento más profundo del mundo.
+            </p>
+        </section>
+        
+        <footer class="main-footer">
+            <p>&copy; 2024 ALAN RUIZ GALICIA. Todos los derechos reservados.</p>
+            <!-- Puedes añadir aquí enlaces a sus perfiles de autor, medios donde publica, etc. -->
+            <!-- Ejemplo: <a href="URL_DE_SU_BLOG" target="_blank">Blog Personal</a> | <a href="URL_DE_SU_EDITORIAL" target="_blank">Obras Publicadas</a> -->
+        </footer>
+    </div>
+
+    <!-- Mobile Navigation Bar - Visible solo en móviles -->
+    <nav id="mobile-nav-bar">
+        <a href="#level-a" class="mobile-nav-btn">A</a>
+        <a href="#level-r" class="mobile-nav-btn">R</a>
+        <a href="#level-g" class="mobile-nav-btn">G</a>
+    </nav>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // El scroll-behavior: smooth en el CSS ya maneja el desplazamiento suave para los anchor links.
+        // Este script es solo para asegurar la funcionalidad básica de navegación si se llegara a necesitar.
+    });
+</script>
+</body>
+</html>
