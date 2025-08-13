@@ -105,9 +105,10 @@
 
         /* Sección Hero (Imagen Principal) */
         .hero-section {
-            background-image: url('assets/mayfit/img/original-image.jpeg'); /* Usamos la imagen original */
-            background-size: cover;
-            background-position: center center;
+            /* ANTES: background-image: url('assets/mayfit/img/original-image.jpeg'); */
+            background-color: var(--primary-color); /* Ahora es un color sólido */
+            /* ANTES: background-size: cover; */
+            /* ANTES: background-position: center center; */
             height: 500px; /* Altura del banner */
             display: flex;
             align-items: center;
@@ -119,13 +120,8 @@
         }
 
         .hero-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.4) 100%); /* Sutil gradiente oscuro */
+            /* El gradiente oscuro sobre la imagen de fondo ya no es necesario con un color sólido */
+            content: none; 
         }
 
         .hero-content {
@@ -140,13 +136,13 @@
             font-size: 3.5rem;
             margin-bottom: 10px;
             line-height: 1.2;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5); /* Sombra para que destaque sobre el fondo azul */
         }
 
         .hero-content p {
             font-size: 1.2rem;
             opacity: 0.9;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* Sombra para que destaque */
         }
 
 
