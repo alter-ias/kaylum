@@ -110,10 +110,7 @@
         const { ext } = getWebGLExtensions(gl);
         
         const baseVertexShader = compileShader(gl, gl.VERTEX_SHADER, `precision highp float;attribute vec2 a_position;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform vec2 texelSize;void main(){vUv=a_position*0.5+0.5;vL=vUv-vec2(texelSize.x,0.0);vR=vUv+vec2(texelSize.x,0.0);vT=vUv+vec2(0.0,texelSize.y);vB=vUv-vec2(0.0,texelSize.y);gl_Position=vec4(a_position,0.0,1.0);}`);
-        
-        // CORRECCIÓN VISUAL: Este shader ahora multiplica el color del fluido por la máscara del texto.
         const displayShader = compileShader(gl, gl.FRAGMENT_SHADER, `precision highp float;precision highp sampler2D;varying vec2 vUv;uniform sampler2D uTexture;uniform sampler2D uText;void main(){vec4 fluidColor=texture2D(uTexture,vUv);float textMask=texture2D(uText,vUv).a;gl_FragColor=vec4(fluidColor.rgb*textMask,1.0);}`);
-        
         const splatShader = compileShader(gl, gl.FRAGMENT_SHADER,`precision highp float;precision highp sampler2D;varying vec2 vUv;uniform sampler2D uTarget;uniform float aspectRatio;uniform vec3 color;uniform vec2 point;uniform float radius;void main(){vec2 p=vUv-point.xy;p.x*=aspectRatio;vec3 splat=exp(-dot(p,p)/radius)*color;vec3 base=texture2D(uTarget,vUv).xyz;gl_FragColor=vec4(base+splat,1.0);}`);
         const advectionShader = compileShader(gl, gl.FRAGMENT_SHADER,`precision highp float;precision highp sampler2D;varying vec2 vUv;uniform sampler2D uVelocity;uniform sampler2D uSource;uniform vec2 texelSize;uniform float dt;uniform float dissipation;void main(){vec2 coord=vUv-texture2D(uVelocity,vUv).xy*dt*texelSize;gl_FragColor=dissipation*texture2D(uSource,coord);gl_FragColor.a=1.0;}`);
         const divergenceShader = compileShader(gl, gl.FRAGMENT_SHADER,`precision highp float;precision highp sampler2D;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uVelocity;void main(){float L=texture2D(uVelocity,vL).x;float R=texture2D(uVelocity,vR).x;float T=texture2D(uVelocity,vT).y;float B=texture2D(uVelocity,vB).y;vec2 C=texture2D(uVelocity,vUv).xy;if(vL.x<0.0){L=-C.x;}if(vR.x>1.0){R=-C.x;}if(vB.y<0.0){B=-C.y;}if(vT.y>1.0){T=-C.y;}float div=0.5*(R-L+T-B);gl_FragColor=vec4(div,0.0,0.0,1.0);}`);
@@ -226,7 +223,14 @@
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             programs.display.bind(gl);
             gl.uniform1i(programs.display.uniforms.uTexture, dye.read.attach(0));
-            gl.uniform1i(programs.display.uniforms.uText, textTexture.attach(1));
+            
+            // ===== CORRECCIÓN FINAL Y DEFINITIVA =====
+            // Se activa manualmente la unidad de textura 1 y se enlaza la textura del texto.
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, textTexture);
+            // Se le dice al shader que use la unidad de textura 1.
+            gl.uniform1i(programs.display.uniforms.uText, 1);
+            
             blit(gl, null);
 
             requestAnimationFrame(update);
