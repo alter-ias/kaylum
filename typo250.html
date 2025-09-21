@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Tipografía Fluida - prueba 250</title>
+    <title>Tipografía Fluida - ¡Funcionando!</title>
     <link rel="icon" href="data:,"> <!-- Evita el error 404 del favicon -->
     <style>
         @font-face {
@@ -52,7 +52,8 @@
     const config = {
         SIM_RESOLUTION: 128,
         DYE_RESOLUTION: 1024,
-        DENSITY_DISSIPATION: 1.2,
+        // CORRECCIÓN CLAVE: Se cambia de 1.2 a 1.0 para que el color no se desvanezca instantáneamente.
+        DENSITY_DISSIPATION: 1.0, 
         VELOCITY_DISSIPATION: 0.3,
         PRESSURE: 0.8,
         PRESSURE_ITERATIONS: 20,
@@ -147,7 +148,7 @@
         }
 
         initFramebuffers();
-        multipleSplats(parseInt(Math.random() * 20) + 5);
+        multipleSplats(parseInt(Math.random() * 20) + 10);
 
         function update() {
             const dt = calcDeltaTime();
@@ -224,11 +225,8 @@
             programs.display.bind(gl);
             gl.uniform1i(programs.display.uniforms.uTexture, dye.read.attach(0));
             
-            // ===== CORRECCIÓN FINAL Y DEFINITIVA =====
-            // Se activa manualmente la unidad de textura 1 y se enlaza la textura del texto.
             gl.activeTexture(gl.TEXTURE1);
             gl.bindTexture(gl.TEXTURE_2D, textTexture);
-            // Se le dice al shader que use la unidad de textura 1.
             gl.uniform1i(programs.display.uniforms.uText, 1);
             
             blit(gl, null);
@@ -396,7 +394,14 @@
     }
 
     function pointerPrototype() { this.x=0;this.y=0;this.dx=0;this.dy=0;this.down=false;this.moved=false;this.color=[30,0,300]; }
-    function generateColor() { const c=HSVtoRGB(Math.random(),1.0,1.0);c.r*=0.15;c.g*=0.15;c.b*=0.15;return c; }
+    
+    function generateColor() { 
+        const c=HSVtoRGB(Math.random(), 1.0, 1.0);
+        c.r *= 0.25; 
+        c.g *= 0.25; 
+        c.b *= 0.25; 
+        return c; 
+    }
     function HSVtoRGB(h,s,v){let r,g,b,i,f,p,q,t;i=Math.floor(h*6);f=h*6-i;p=v*(1-s);q=v*(1-f*s);t=v*(1-(1-f)*s);switch(i%6){case 0:r=v,g=t,b=p;break;case 1:r=q,g=v,b=p;break;case 2:r=p,g=v,b=t;break;case 3:r=p,g=q,b=v;break;case 4:r=t,g=p,b=v;break;case 5:r=v,g=p,b=q;break;}return {r,g,b};}
 
     </script>
