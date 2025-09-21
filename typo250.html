@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Tipografía Fluida - Versión Final</title>
+    <title>Paso Final: Renderizado Correcto</title>
     <link rel="icon" href="data:,">
     <style>
         @font-face {
@@ -22,375 +22,119 @@
             width: 100%;
             height: 100%;
         }
-        .info {
-            position: fixed;
-            bottom: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: rgba(255, 255, 255, 0.4);
-            font-family: sans-serif;
-            font-size: 14px;
-            pointer-events: none;
-            text-align: center;
-        }
     </style>
 </head>
 <body>
     <canvas id="glCanvas"></canvas>
-    <div class="info">Mueve el cursor para interactuar con la tipografía</div>
 
     <script>
     'use strict';
 
-    // ================================================================
-    // --- CONFIGURACIÓN ---
-    // ================================================================
-    const TEXT_TO_ANIMATE = 'prueba 250'; 
+    // CONFIGURACIÓN BÁSICA
+    const TEXT_TO_RENDER = 'prueba 250';
     const FONT_FAMILY = 'MiTipografia';
-    const FONT_SIZE = 160; 
-
-    const config = {
-        SIM_RESOLUTION: 128,
-        DYE_RESOLUTION: 1024,
-        DENSITY_DISSIPATION: 0.98,
-        VELOCITY_DISSIPATION: 0.99,
-        PRESSURE: 0.8,
-        PRESSURE_ITERATIONS: 20,
-        CURL: 30,
-        SPLAT_RADIUS: 0.3,
-        SPLAT_FORCE: 6000
-    };
-
-    // ================================================================
-    // --- INICIO DEL CÓDIGO DE LA SIMULACIÓN ---
-    // ================================================================
+    const FONT_SIZE = 160;
 
     window.onload = function() {
+        console.log("Iniciando. Buscando canvas...");
         const canvas = document.getElementById('glCanvas');
-        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        const gl = canvas.getContext('webgl');
 
         if (!gl) {
-            alert('WebGL no está disponible en tu navegador.');
+            alert('Error crítico: WebGL no está disponible.');
             return;
         }
+        console.log("WebGL Context obtenido.");
 
+        // 1. Cargar la fuente. Sabemos que esta parte funciona.
         const font = new FontFace(FONT_FAMILY, `url(assets/fuentes/tipo250.ttf)`);
+        console.log("Intentando cargar la fuente...");
         font.load().then(loadedFont => {
             document.fonts.add(loadedFont);
-            console.log("Fuente cargada. Iniciando animación...");
-            main(gl, canvas);
-        }).catch(err => console.error("Error crítico al cargar la fuente:", err));
+            console.log("ÉXITO: Fuente cargada. Iniciando WebGL.");
+            startWebGL(gl, canvas);
+        }).catch(err => console.error("ERROR AL CARGAR LA FUENTE:", err));
     };
-    
-    function main(gl, canvas) {
+
+    function startWebGL(gl, canvas) {
+        // 2. Crear un canvas 2D oculto con nuestro texto.
         const textCanvas = document.createElement('canvas');
         const textCtx = textCanvas.getContext('2d');
-        let textTexture;
-
-        function drawTextOnCanvas() {
-            const dpr = window.devicePixelRatio || 1;
-            textCanvas.width = canvas.clientWidth * dpr;
-            textCanvas.height = canvas.clientHeight * dpr;
-            textCtx.fillStyle = '#FFFFFF';
-            textCtx.font = `${FONT_SIZE * dpr}px ${FONT_FAMILY}`;
-            textCtx.textAlign = 'center';
-            textCtx.textBaseline = 'middle';
-            textCtx.fillText(TEXT_TO_ANIMATE, textCanvas.width / 2, textCanvas.height / 2);
-        }
-
-        const { ext } = getWebGLExtensions(gl);
-        const baseVertexShader = compileShader(gl, gl.VERTEX_SHADER, `precision highp float;attribute vec2 a_position;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform vec2 texelSize;void main(){vUv=a_position*0.5+0.5;vL=vUv-vec2(texelSize.x,0.0);vR=vUv+vec2(texelSize.x,0.0);vT=vUv+vec2(0.0,texelSize.y);vB=vUv-vec2(0.0,texelSize.y);gl_Position=vec4(a_position,0.0,1.0);}`);
-        const displayShader = compileShader(gl, gl.FRAGMENT_SHADER, `precision highp float;precision highp sampler2D;varying vec2 vUv;uniform sampler2D uTexture;uniform sampler2D uText;void main(){vec4 fluidColor=texture2D(uTexture,vUv);float textMask=texture2D(uText,vUv).a;gl_FragColor=vec4(fluidColor.rgb*textMask,1.0);}`);
-        const splatShader = compileShader(gl, gl.FRAGMENT_SHADER,`precision highp float;precision highp sampler2D;varying vec2 vUv;uniform sampler2D uTarget;uniform float aspectRatio;uniform vec3 color;uniform vec2 point;uniform float radius;void main(){vec2 p=vUv-point.xy;p.x*=aspectRatio;vec3 splat=exp(-dot(p,p)/radius)*color;vec3 base=texture2D(uTarget,vUv).xyz;gl_FragColor=vec4(base+splat,1.0);}`);
-        const advectionShader = compileShader(gl, gl.FRAGMENT_SHADER,`precision highp float;precision highp sampler2D;varying vec2 vUv;uniform sampler2D uVelocity;uniform sampler2D uSource;uniform vec2 texelSize;uniform float dt;uniform float dissipation;void main(){vec2 coord=vUv-texture2D(uVelocity,vUv).xy*dt*texelSize;gl_FragColor=dissipation*texture2D(uSource,coord);gl_FragColor.a=1.0;}`);
-        const divergenceShader = compileShader(gl, gl.FRAGMENT_SHADER,`precision highp float;precision highp sampler2D;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uVelocity;void main(){float L=texture2D(uVelocity,vL).x;float R=texture2D(uVelocity,vR).x;float T=texture2D(uVelocity,vT).y;float B=texture2D(uVelocity,vB).y;vec2 C=texture2D(uVelocity,vUv).xy;if(vL.x<0.0){L=-C.x;}if(vR.x>1.0){R=-C.x;}if(vB.y<0.0){B=-C.y;}if(vT.y>1.0){T=-C.y;}float div=0.5*(R-L+T-B);gl_FragColor=vec4(div,0.0,0.0,1.0);}`);
-        const curlShader = compileShader(gl, gl.FRAGMENT_SHADER,`precision highp float;precision highp sampler2D;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uVelocity;void main(){float L=texture2D(uVelocity,vL).y;float R=texture2D(uVelocity,vR).y;float T=texture2D(uVelocity,vT).x;float B=texture2D(uVelocity,vB).x;float vorticity=R-L-T-B;gl_FragColor=vec4(0.5*vorticity,0.0,0.0,1.0);}`);
-        const vorticityShader = compileShader(gl, gl.FRAGMENT_SHADER,`precision highp float;precision highp sampler2D;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uVelocity;uniform sampler2D uCurl;uniform float curl;uniform float dt;void main(){float L=texture2D(uCurl,vL).x;float R=texture2D(uCurl,vR).x;float T=texture2D(uCurl,vT).x;float B=texture2D(uCurl,vB).x;float C=texture2D(uCurl,vUv).x;vec2 force=0.5*vec2(abs(T)-abs(B),abs(R)-abs(L));force/=length(force)+0.0001;force*=curl*C;force.y*=-1.0;vec2 vel=texture2D(uVelocity,vUv).xy;gl_FragColor=vec4(vel+force*dt,0.0,1.0);}`);
-        const pressureShader = compileShader(gl, gl.FRAGMENT_SHADER,`precision highp float;precision highp sampler2D;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uPressure;uniform sampler2D uDivergence;void main(){float L=texture2D(uPressure,vL).x;float R=texture2D(uPressure,vR).x;float T=texture2D(uPressure,vT).x;float B=texture2D(uPressure,vB).x;float div=texture2D(uDivergence,vUv).x;float pressure=(L+R+B+T-div)*0.25;gl_FragColor=vec4(pressure,0.0,0.0,1.0);}`);
-        const gradientSubtractShader = compileShader(gl, gl.FRAGMENT_SHADER,`precision highp float;precision highp sampler2D;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uPressure;uniform sampler2D uVelocity;void main(){float L=texture2D(uPressure,vL).x;float R=texture2D(uPressure,vR).x;float T=texture2D(uPressure,vT).x;float B=texture2D(uPressure,vB).x;vec2 vel=texture2D(uVelocity,vUv).xy;vel.xy-=0.5*vec2(R-L,T-B);gl_FragColor=vec4(vel,0.0,1.0);}`);
-
-        const programs = {
-            display: new GLProgram(gl, baseVertexShader, displayShader),
-            splat: new GLProgram(gl, baseVertexShader, splatShader),
-            advection: new GLProgram(gl, baseVertexShader, advectionShader),
-            divergence: new GLProgram(gl, baseVertexShader, divergenceShader),
-            curl: new GLProgram(gl, baseVertexShader, curlShader),
-            vorticity: new GLProgram(gl, baseVertexShader, vorticityShader),
-            pressure: new GLProgram(gl, baseVertexShader, pressureShader),
-            gradienSubtract: new GLProgram(gl, baseVertexShader, gradientSubtractShader)
-        };
         
-        let dye, velocity, divergence, curl, pressure;
-        let lastTime = Date.now();
-        const pointers = [new pointerPrototype()];
+        const dpr = window.devicePixelRatio || 1;
+        textCanvas.width = canvas.clientWidth * dpr;
+        textCanvas.height = canvas.clientHeight * dpr;
+        textCtx.fillStyle = '#FFFFFF';
+        textCtx.font = `${FONT_SIZE * dpr}px ${FONT_FAMILY}`;
+        textCtx.textAlign = 'center';
+        textCtx.textBaseline = 'middle';
+        textCtx.fillText(TEXT_TO_RENDER, textCanvas.width / 2, textCanvas.height / 2);
+        console.log("Texto dibujado en canvas oculto.");
 
-        function initFramebuffers() {
-            let simRes = getResolution(canvas, config.SIM_RESOLUTION);
-            let dyeRes = getResolution(canvas, config.DYE_RESOLUTION);
-            const format = ext.formatRGBA;
-            const type = ext.type;
-            dye = createDoubleFBO(gl, dyeRes.width, dyeRes.height, format.internalFormat, format.format, type, gl.LINEAR);
-            velocity = createDoubleFBO(gl, simRes.width, simRes.height, ext.formatRG.internalFormat, ext.formatRG.format, type, gl.NEAREST);
-            divergence = createFBO(gl, simRes.width, simRes.height, ext.formatR.internalFormat, ext.formatR.format, type, gl.NEAREST);
-            curl = createFBO(gl, simRes.width, simRes.height, ext.formatR.internalFormat, ext.formatR.format, type, gl.NEAREST);
-            pressure = createDoubleFBO(gl, simRes.width, simRes.height, ext.formatR.internalFormat, ext.formatR.format, type, gl.NEAREST);
-            updateTextTexture();
-        }
-
-        initFramebuffers();
-        multipleSplats(parseInt(Math.random() * 20) + 10);
-
-        function update() {
-            const dt = calcDeltaTime();
-            if (resizeCanvas()) {
-                initFramebuffers();
-                drawTextOnCanvas(); // Volver a dibujar si la ventana cambia de tamaño
-            }
-            
-            gl.viewport(0, 0, velocity.width, velocity.height);
-            programs.advection.bind(gl);
-            gl.uniform2f(programs.advection.uniforms.texelSize, 1.0 / velocity.width, 1.0 / velocity.height);
-            gl.uniform1i(programs.advection.uniforms.uVelocity, velocity.read.attach(0));
-            gl.uniform1i(programs.advection.uniforms.uSource, velocity.read.attach(0));
-            gl.uniform1f(programs.advection.uniforms.dt, dt);
-            gl.uniform1f(programs.advection.uniforms.dissipation, config.VELOCITY_DISSIPATION);
-            blit(gl, velocity.write.fbo);
-            velocity.swap();
-
-            gl.viewport(0, 0, dye.width, dye.height);
-            gl.uniform1i(programs.advection.uniforms.uVelocity, velocity.read.attach(0));
-            gl.uniform1i(programs.advection.uniforms.uSource, dye.read.attach(1));
-            gl.uniform1f(programs.advection.uniforms.dissipation, config.DENSITY_DISSIPATION);
-            blit(gl, dye.write.fbo);
-            dye.swap();
-
-            for (let i = 0; i < pointers.length; i++) {
-                const pointer = pointers[i];
-                if (pointer.moved) {
-                    pointer.moved = false;
-                    splat(pointer.x, pointer.y, pointer.dx, pointer.dy, pointer.color);
-                }
-            }
-
-            gl.viewport(0, 0, velocity.width, velocity.height);
-            programs.curl.bind(gl);
-            gl.uniform2f(programs.curl.uniforms.texelSize, 1.0 / velocity.width, 1.0 / velocity.height);
-            gl.uniform1i(programs.curl.uniforms.uVelocity, velocity.read.attach(0));
-            blit(gl, curl.fbo);
-
-            programs.vorticity.bind(gl);
-            gl.uniform2f(programs.vorticity.uniforms.texelSize, 1.0 / velocity.width, 1.0 / velocity.height);
-            gl.uniform1i(programs.vorticity.uniforms.uVelocity, velocity.read.attach(0));
-            gl.uniform1i(programs.vorticity.uniforms.uCurl, curl.attach(1));
-            gl.uniform1f(programs.vorticity.uniforms.curl, config.CURL);
-            gl.uniform1f(programs.vorticity.uniforms.dt, dt);
-            blit(gl, velocity.write.fbo);
-            velocity.swap();
-
-            programs.divergence.bind(gl);
-            gl.uniform2f(programs.divergence.uniforms.texelSize, 1.0 / velocity.width, 1.0 / velocity.height);
-            gl.uniform1i(programs.divergence.uniforms.uVelocity, velocity.read.attach(0));
-            blit(gl, divergence.fbo);
-
-            programs.pressure.bind(gl);
-            gl.uniform2f(programs.pressure.uniforms.texelSize, 1.0 / velocity.width, 1.0 / velocity.height);
-            gl.uniform1i(programs.pressure.uniforms.uDivergence, divergence.attach(0));
-            for (let i = 0; i < config.PRESSURE_ITERATIONS; i++) {
-                gl.bindFramebuffer(gl.FRAMEBUFFER, pressure.write.fbo);
-                gl.uniform1i(programs.pressure.uniforms.uPressure, pressure.read.attach(1));
-                blit(gl, null);
-                pressure.swap();
-            }
-
-            programs.gradienSubtract.bind(gl);
-            gl.uniform2f(programs.gradienSubtract.uniforms.texelSize, 1.0 / velocity.width, 1.0 / velocity.height);
-            gl.uniform1i(programs.gradienSubtract.uniforms.uPressure, pressure.read.attach(0));
-            gl.uniform1i(programs.gradienSubtract.uniforms.uVelocity, velocity.read.attach(1));
-            blit(gl, velocity.write.fbo);
-            velocity.swap();
-
-            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            programs.display.bind(gl);
-            gl.uniform1i(programs.display.uniforms.uTexture, dye.read.attach(0));
-            
-            gl.activeTexture(gl.TEXTURE1);
-            gl.bindTexture(gl.TEXTURE_2D, textTexture);
-            gl.uniform1i(programs.display.uniforms.uText, 1);
-            
-            blit(gl, null);
-
-            requestAnimationFrame(update);
-        }
+        // 3. Convertir ese canvas en una textura de WebGL.
+        const textTexture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_D, textTexture);
         
-        function updateTextTexture() {
-            if (textTexture) { gl.deleteTexture(textTexture); }
-            textTexture = createTextureFromCanvas(gl, textCanvas);
-        }
-
-        function splat(x, y, dx, dy, color) {
-            gl.viewport(0, 0, velocity.width, velocity.height);
-            programs.splat.bind(gl);
-            gl.uniform1i(programs.splat.uniforms.uTarget, velocity.read.attach(0));
-            gl.uniform1f(programs.splat.uniforms.aspectRatio, canvas.width / canvas.height);
-            gl.uniform2f(programs.splat.uniforms.point, x / canvas.width, 1.0 - y / canvas.height);
-            gl.uniform3f(programs.splat.uniforms.color, dx * config.SPLAT_FORCE, -dy * config.SPLAT_FORCE, 0.0);
-            gl.uniform1f(programs.splat.uniforms.radius, config.SPLAT_RADIUS / 100.0);
-            blit(gl, velocity.write.fbo);
-            velocity.swap();
-
-            gl.viewport(0, 0, dye.width, dye.height);
-            gl.uniform1i(programs.splat.uniforms.uTarget, dye.read.attach(0));
-            gl.uniform3f(programs.splat.uniforms.color, color.r, color.g, color.b);
-            blit(gl, dye.write.fbo);
-            dye.swap();
-        }
-
-        function multipleSplats(amount) {
-            for (let i = 0; i < amount; i++) {
-                const color = generateColor();
-                splat(canvas.width * Math.random(), canvas.height * Math.random(), (Math.random() - 0.5) * 1000, (Math.random() - 0.5) * 1000, color);
-            }
-        }
-
-        function calcDeltaTime() {
-            let now = Date.now();
-            let dt = (now - lastTime) / 1000.0;
-            lastTime = now;
-            return Math.min(dt, 0.0166);
-        }
-
-        function resizeCanvas() {
-            const dpr = window.devicePixelRatio || 1;
-            if (canvas.width != canvas.clientWidth * dpr || canvas.height != canvas.clientHeight * dpr) {
-                canvas.width = canvas.clientWidth * dpr;
-                canvas.height = canvas.clientHeight * dpr;
-                return true;
-            }
-            return false;
-        }
-
-        canvas.addEventListener('mousemove', e => {
-            pointers[0].moved = pointers[0].down;
-            pointers[0].dx = (e.offsetX - pointers[0].x) * 5;
-            pointers[0].dy = (e.offsetY - pointers[0].y) * 5;
-            pointers[0].x = e.offsetX;
-            pointers[0].y = e.offsetY;
-        });
-
-        canvas.addEventListener('mousedown', () => {
-            pointers[0].down = true;
-            pointers[0].color = generateColor();
-        });
-
-        window.addEventListener('mouseup', () => { pointers[0].down = false; });
-        
-        update();
-    }
-    
-    // --- Funciones de utilidad de WebGL ---
-
-    function getWebGLExtensions(gl) {
-        gl.getExtension('OES_texture_float');
-        gl.getExtension('OES_texture_float_linear');
-        const halfFloat = gl.getExtension('OES_texture_half_float');
-        gl.getExtension('OES_texture_half_float_linear');
-        const formatRGBA = { internalFormat: gl.RGBA, format: gl.RGBA };
-        const formatRG = { internalFormat: gl.RGBA, format: gl.RGBA };
-        const formatR = { internalFormat: gl.RGBA, format: gl.RGBA };
-        const type = halfFloat ? halfFloat.HALF_FLOAT_OES : gl.UNSIGNED_BYTE;
-        return { ext: { formatRGBA, formatRG, formatR, type } };
-    }
-
-    function GLProgram(gl, vertexShader, fragmentShader) {
-        this.program = gl.createProgram();
-        this.uniforms = {};
-        gl.attachShader(this.program, vertexShader);
-        gl.attachShader(this.program, fragmentShader);
-        gl.linkProgram(this.program);
-        if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) throw gl.getProgramInfoLog(this.program);
-        const uniformCount = gl.getProgramParameter(this.program, gl.ACTIVE_UNIFORMS);
-        for (let i = 0; i < uniformCount; i++) {
-            const uniform = gl.getActiveUniform(this.program, i);
-            this.uniforms[uniform.name] = gl.getUniformLocation(this.program, uniform.name);
-        }
-    }
-    GLProgram.prototype.bind = function (gl) { gl.useProgram(this.program); };
-
-    function compileShader(gl, type, source) {
-        const shader = gl.createShader(type);
-        gl.shaderSource(shader, source);
-        gl.compileShader(shader);
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw gl.getShaderInfoLog(shader);
-        return shader;
-    };
-    
-    function blit (gl, destination) {
-        gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,-1,1,1,1,1,-1]), gl.STATIC_DRAW);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0,1,2,0,2,3]), gl.STATIC_DRAW);
-        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(0);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, destination);
-        gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
-    }
-    
-    function createFBO (gl, w, h, internalFormat, format, type, param) {
-        gl.activeTexture(gl.TEXTURE0);
-        let texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, param);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, param);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, w, h, 0, format, type, null);
-        let fbo = gl.createFramebuffer();
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-        gl.viewport(0, 0, w, h);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        return { texture, fbo, width: w, height: h, attach(id){gl.activeTexture(gl.TEXTURE0+id);gl.bindTexture(gl.TEXTURE_2D,texture);return id;}};
-    }
-
-    function createDoubleFBO (gl, w, h, internalFormat, format, type, param) {
-        let fbo1 = createFBO(gl, w, h, internalFormat, format, type, param);
-        let fbo2 = createFBO(gl, w, h, internalFormat, format, type, param);
-        return { get read() { return fbo1 }, get write() { return fbo2 }, swap() { let temp=fbo1; fbo1=fbo2; fbo2=temp; }};
-    }
-
-    function createTextureFromCanvas(gl, canvas) {
-        const texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        // *** LA CORRECCIÓN CLAVE PARA EL TEXTO INVERTIDO ***
+        // ===== LA LÍNEA MÁGICA QUE ARREGLA EL TEXTO AL REVÉS =====
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); // Se desactiva para no afectar otras texturas.
-        return texture;
-    }
-    
-    function getResolution(canvas, resolution) {
-        let aspectRatio = canvas.clientWidth / canvas.clientHeight;
-        if (aspectRatio < 1) aspectRatio = 1.0 / aspectRatio;
-        let min = Math.round(resolution);
-        let max = Math.round(resolution * aspectRatio);
-        return (canvas.clientWidth > canvas.clientHeight) ? { width: max, height: min } : { width: min, height: max };
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textCanvas);
+        console.log("Textura WebGL creada y volteada correctamente.");
+
+        // 4. Crear el programa de shaders más simple posible.
+        const vertexShaderSource = `attribute vec2 a_position; varying vec2 vUv; void main() { vUv = a_position * 0.5 + 0.5; gl_Position = vec4(a_position, 0.0, 1.0); }`;
+        const fragmentShaderSource = `precision highp float; varying vec2 vUv; uniform sampler2D u_texture; void main() { gl_FragColor = texture2D(u_texture, vUv); }`;
+
+        const program = createProgram(gl, vertexShaderSource, fragmentShaderSource);
+        const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+        const textureUniformLocation = gl.getUniformLocation(program, "u_texture");
+        
+        // 5. Crear un rectángulo que ocupe toda la pantalla.
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+
+        // 6. Dibujar una sola vez.
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        gl.clearColor(0, 0, 0, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.useProgram(program);
+        gl.enableVertexAttribArray(positionAttributeLocation);
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, textTexture);
+        gl.uniform1i(textureUniformLocation, 0);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+        console.log("Renderizado finalizado. El texto debería ser visible y estar del derecho.");
     }
 
-    function pointerPrototype() { this.x=0;this.y=0;this.dx=0;this.dy=0;this.down=false;this.moved=false;this.color=[0.1,0.5,1.0]; }
-    
-    function generateColor() { 
-        const c=HSVtoRGB(Math.random(), 1.0, 1.0);
-        c.r *= 0.5; 
-        c.g *= 0.5; 
-        c.b *= 0.5; 
-        return c; 
+    // --- Funciones de utilidad para WebGL (sin cambios) ---
+    function createShader(gl, type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (gl.getShaderParameter(shader, gl.COMPILE_STATUS)) return shader;
+        console.error("Error compilando shader:", gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
     }
-    function HSVtoRGB(h,s,v){let r,g,b,i,f,p,q,t;i=Math.floor(h*6);f=h*6-i;p=v*(1-s);q=v*(1-f*s);t=v*(1-(1-f)*s);switch(i%6){case 0:r=v,g=t,b=p;break;case 1:r=q,g=v,b=p;break;case 2:r=p,g=v,b=t;break;case 3:r=p,g=q,b=v;break;case 4:r=t,g=p,b=v;break;case 5:r=v,g=p,b=q;break;}return {r,g,b};}
-
+    function createProgram(gl, vsSource, fsSource) {
+        const program = gl.createProgram();
+        const vertexShader = createShader(gl, gl.VERTEX_SHADER, vsSource);
+        const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+        if (gl.getProgramParameter(program, gl.LINK_STATUS)) return program;
+        console.error("Error enlazando programa:", gl.getProgramInfoLog(program));
+        gl.deleteProgram(program);
+    }
     </script>
 </body>
 </html>
