@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Tipografía Fluida - prueba 250</title>
-    <!-- Esto evita que el navegador pida un favicon y muestre un error 404 en la consola -->
-    <link rel="icon" href="data:,">
+    <link rel="icon" href="data:,"> <!-- Evita el error 404 del favicon -->
     <style>
         @font-face {
             font-family: 'MiTipografia';
@@ -44,7 +43,7 @@
     'use strict';
 
     // ================================================================
-    // --- PERSONALIZA TU ANIMACIÓN AQUÍ ---
+    // --- CONFIGURACIÓN ---
     // ================================================================
     const TEXT_TO_ANIMATE = 'prueba 250'; 
     const FONT_FAMILY = 'MiTipografia';
@@ -114,8 +113,6 @@
         const displayShader = compileShader(gl, gl.FRAGMENT_SHADER, `precision highp float;precision highp sampler2D;varying vec2 vUv;uniform sampler2D uTexture;uniform sampler2D uText;void main(){vec4 fluidColor=texture2D(uTexture,vUv);float textMask=texture2D(uText,vUv).a;if(textMask<0.1){discard;}gl_FragColor=fluidColor;}`);
         const splatShader = compileShader(gl, gl.FRAGMENT_SHADER,`precision highp float;precision highp sampler2D;varying vec2 vUv;uniform sampler2D uTarget;uniform float aspectRatio;uniform vec3 color;uniform vec2 point;uniform float radius;void main(){vec2 p=vUv-point.xy;p.x*=aspectRatio;vec3 splat=exp(-dot(p,p)/radius)*color;vec3 base=texture2D(uTarget,vUv).xyz;gl_FragColor=vec4(base+splat,1.0);}`);
         const advectionShader = compileShader(gl, gl.FRAGMENT_SHADER,`precision highp float;precision highp sampler2D;varying vec2 vUv;uniform sampler2D uVelocity;uniform sampler2D uSource;uniform vec2 texelSize;uniform float dt;uniform float dissipation;void main(){vec2 coord=vUv-texture2D(uVelocity,vUv).xy*dt*texelSize;gl_FragColor=dissipation*texture2D(uSource,coord);gl_FragColor.a=1.0;}`);
-        
-        // CORRECCIÓN: Shaders revertidos a una versión más compatible (sin textureSize)
         const divergenceShader = compileShader(gl, gl.FRAGMENT_SHADER,`precision highp float;precision highp sampler2D;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uVelocity;void main(){float L=texture2D(uVelocity,vL).x;float R=texture2D(uVelocity,vR).x;float T=texture2D(uVelocity,vT).y;float B=texture2D(uVelocity,vB).y;vec2 C=texture2D(uVelocity,vUv).xy;if(vL.x<0.0){L=-C.x;}if(vR.x>1.0){R=-C.x;}if(vB.y<0.0){B=-C.y;}if(vT.y>1.0){T=-C.y;}float div=0.5*(R-L+T-B);gl_FragColor=vec4(div,0.0,0.0,1.0);}`);
         const curlShader = compileShader(gl, gl.FRAGMENT_SHADER,`precision highp float;precision highp sampler2D;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uVelocity;void main(){float L=texture2D(uVelocity,vL).y;float R=texture2D(uVelocity,vR).y;float T=texture2D(uVelocity,vT).x;float B=texture2D(uVelocity,vB).x;float vorticity=R-L-T-B;gl_FragColor=vec4(0.5*vorticity,0.0,0.0,1.0);}`);
         const vorticityShader = compileShader(gl, gl.FRAGMENT_SHADER,`precision highp float;precision highp sampler2D;varying vec2 vUv;varying vec2 vL;varying vec2 vR;varying vec2 vT;varying vec2 vB;uniform sampler2D uVelocity;uniform sampler2D uCurl;uniform float curl;uniform float dt;void main(){float L=texture2D(uCurl,vL).x;float R=texture2D(uCurl,vR).x;float T=texture2D(uCurl,vT).x;float B=texture2D(uCurl,vB).x;float C=texture2D(uCurl,vUv).x;vec2 force=0.5*vec2(abs(T)-abs(B),abs(R)-abs(L));force/=length(force)+0.0001;force*=curl*C;force.y*=-1.0;vec2 vel=texture2D(uVelocity,vUv).xy;gl_FragColor=vec4(vel+force*dt,0.0,1.0);}`);
@@ -160,7 +157,6 @@
             }
             updateTextTexture();
             
-            // CORRECCIÓN: Pasamos texelSize a todos los shaders que lo necesitan
             gl.viewport(0, 0, velocity.width, velocity.height);
             programs.advection.bind(gl);
             gl.uniform2f(programs.advection.uniforms.texelSize, 1.0 / velocity.width, 1.0 / velocity.height);
@@ -306,6 +302,8 @@
     // --- Funciones de utilidad de WebGL ---
 
     function getWebGLExtensions(gl) {
+        gl.getExtension('OES_texture_float');
+        gl.getExtension('OES_texture_float_linear');
         const halfFloat = gl.getExtension('OES_texture_half_float');
         gl.getExtension('OES_texture_half_float_linear');
         const formatRGBA = { internalFormat: gl.RGBA, format: gl.RGBA };
@@ -324,7 +322,8 @@
         if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) throw gl.getProgramInfoLog(this.program);
         const uniformCount = gl.getProgramParameter(this.program, gl.ACTIVE_UNIFORMS);
         for (let i = 0; i < uniformCount; i++) {
-            const uniform = gl.getProgramActiveUniform(this.program, i);
+            // CORRECCIÓN: Se usa gl.getActiveUniform, que es compatible con WebGL 1 y 2.
+            const uniform = gl.getActiveUniform(this.program, i);
             this.uniforms[uniform.name] = gl.getUniformLocation(this.program, uniform.name);
         }
     }
@@ -381,7 +380,13 @@
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
         return texture;
     }
-    WebGLTexture.prototype.attach = function (id) { gl.activeTexture(gl.TEXTURE0 + id); gl.bindTexture(gl.TEXTURE_2D, this); return id; };
+    WebGLTexture.prototype.attach = function (id) {
+        const canvas = document.getElementById('glCanvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        gl.activeTexture(gl.TEXTURE0 + id);
+        gl.bindTexture(gl.TEXTURE_2D, this);
+        return id;
+    };
     
     function getResolution(canvas, resolution) {
         let aspectRatio = canvas.clientWidth / canvas.clientHeight;
